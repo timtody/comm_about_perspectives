@@ -16,55 +16,6 @@ from mnist import MNISTDataset
 from experiments.experiment import BaseExperiment
 
 
-def filter_df(
-    df: DataFrame,
-    datapoints: int = 50,
-    sort: bool = False,
-    filter: bool = True,
-):
-    if sort:
-        df = df.sort_values(by=["Step"])
-    if filter:
-        filters = ["Rank", "Type", "Agent_X", "Agent_Y"]
-        nsteps = len(list(df.groupby(filters).groups.values())[0])
-        df = df.groupby(filters).apply(lambda x: x[:: nsteps // datapoints])
-    return df
-
-
-def plot_relplot(df: DataFrame, type: str):
-    sns.relplot(
-        data=df[df["Type"] == type],
-        x="Step",
-        y="Loss",
-        col="Agent_X",
-        row="Agent_Y",
-        style="Type",
-        hue="Type",
-        dashes=False,
-        markers=True,
-        kind="line",
-        row_order=["A", "B", "C"],
-        col_order=["A", "B", "C"],
-        facet_kws=dict(margin_titles=True),
-    )
-    plt.savefig(f"catplot_{type}.pdf")
-    plt.savefig(f"catplot_{type}.svg")
-
-
-def plot_lineplot(df: DataFrame, type: str):
-    sns.lineplot(
-        data=df[df["Type"] == type],
-        x="Step",
-        y="Loss",
-        style="Agent_X",
-        hue="Agent_X",
-        dashes=False,
-        markers=True,
-    )
-    plt.savefig(f"lineplot_{type}.pdf")
-    plt.savefig(f"lineplot_{type}.svg")
-
-
 class Experiment(BaseExperiment):
     @staticmethod
     def load_data(
@@ -193,3 +144,52 @@ class Experiment(BaseExperiment):
         loss.backward()
         agent.opt.step()
         self.writer.add((step, loss.item(), "AE", agent.name), tag="loss")
+
+
+def filter_df(
+    df: DataFrame,
+    datapoints: int = 50,
+    sort: bool = False,
+    filter: bool = True,
+):
+    if sort:
+        df = df.sort_values(by=["Step"])
+    if filter:
+        filters = ["Rank", "Type", "Agent_X", "Agent_Y"]
+        nsteps = len(list(df.groupby(filters).groups.values())[0])
+        df = df.groupby(filters).apply(lambda x: x[:: nsteps // datapoints])
+    return df
+
+
+def plot_relplot(df: DataFrame, type: str):
+    sns.relplot(
+        data=df[df["Type"] == type],
+        x="Step",
+        y="Loss",
+        col="Agent_X",
+        row="Agent_Y",
+        style="Type",
+        hue="Type",
+        dashes=False,
+        markers=True,
+        kind="line",
+        row_order=["A", "B", "C"],
+        col_order=["A", "B", "C"],
+        facet_kws=dict(margin_titles=True),
+    )
+    plt.savefig(f"catplot_{type}.pdf")
+    plt.savefig(f"catplot_{type}.svg")
+
+
+def plot_lineplot(df: DataFrame, type: str):
+    sns.lineplot(
+        data=df[df["Type"] == type],
+        x="Step",
+        y="Loss",
+        style="Agent_X",
+        hue="Agent_X",
+        dashes=False,
+        markers=True,
+    )
+    plt.savefig(f"lineplot_{type}.pdf")
+    plt.savefig(f"lineplot_{type}.svg")
