@@ -23,9 +23,11 @@ def start_procs(
     barrier: Barrier = None,
 ):
     processes = []
+    data_path = os.path.join(path, "data")
+    os.makedirs(data_path)
     for rank in range(cfg.nprocs):
-        writer = c_types.MultiProcessingWriter(path, rank=rank)
-        reader = c_types.TidyReader(path)
+        writer = c_types.MultiProcessingWriter(data_path, rank=rank)
+        reader = c_types.TidyReader(data_path)
         proc = mp.Process(
             target=fn, args=(experiment, cfg, rank, writer, reader, path, barrier)
         )
@@ -45,7 +47,7 @@ def start_exp(
     barrier: Barrier,
 ):
     exp = experiment(cfg, rank, writer, reader, path, barrier)
-    exp.run()
+    exp.run(cfg)
 
 
 def run(experiment: c_types.BaseExperiment, cfg: NamedTuple):

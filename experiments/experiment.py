@@ -3,9 +3,10 @@ import multiprocessing as mp
 import os
 from abc import ABC, abstractmethod, abstractstaticmethod
 from multiprocessing import Barrier
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict, Literal, NamedTuple
 
 import c_types
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from chunked_writer import MultiProcessingWriter, TidyReader
@@ -27,7 +28,7 @@ def get_device(gpu=False):
 class BaseExperiment(ABC):
     def __init__(
         self,
-        cfg: Dict,
+        cfg: NamedTuple,
         rank: int,
         writer: MultiProcessingWriter,
         reader: TidyReader,
@@ -35,9 +36,9 @@ class BaseExperiment(ABC):
         barrier: Barrier,
         handin: Dict = {},
     ) -> None:
-        self.cfg: NamedTuple = cfg
-        self.step: int = 0
-        self.rank: int = rank
+        self.cfg = cfg
+        self.step: Literal = 0
+        self.rank = rank
         self.path = path
         self._set_seeds()
         self.dev: torch.Device = get_device(self.cfg.gpu)
@@ -61,15 +62,20 @@ class BaseExperiment(ABC):
 
     def log(self, step: int = 0):
         self.writer._write()
-        if self.rank == 0:
-            data = self.load_data(self.reader)
-            log_path = os.path.join(self.path, f"step_{step}")
-            cwd = os.getcwd()
-            os.mkdir(log_path)
-            os.chdir(log_path)
-            self.plot(data)
-            os.chdir(cwd)
         self.barrier.wait()
+        if self.rank == 0:
+            self._plot(step)
+
+    def _plot(self, step):
+        data = self.load_data(self.reader)
+        log_path = os.path.join(self.path, "plots", f"step_{step}")
+        cwd = os.getcwd()
+        os.makedirs(log_path)
+        os.chdir(log_path)
+        plt.figure()
+        self.plot(data)
+        plt.close()
+        os.chdir(cwd)
 
     @abstractstaticmethod
     def plot(*args) -> None:

@@ -8,10 +8,9 @@ import string
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path, PosixPath
-from typing import Callable, List, AnyStr
+from typing import Callable, List, AnyStr, Tuple
 
 from pandas.core.frame import DataFrame
-import c_types
 import pandas as pd
 
 
@@ -77,6 +76,10 @@ class TidyWriter:
         if len(self.queue) >= self.max_queue_len:
             self._write()
 
+    def add_multiple(self, data: List[Tuple], tag: AnyStr):
+        for d in data:
+            self.add(d, tag)
+
     def close(self) -> None:
         """Closes the writer by writing the remaining data to disk."""
         if len(self.queue) > 0:
@@ -118,6 +121,7 @@ class TidyReader:
         Returns:
             pd.DataFrame: The resulting dataframe.
         """
+        # TODO: check if we can find data with this tag otherwise error or warn
         csv_paths: List = list(Path(path).glob(f"*.{tag}.csv"))
         sort_key: Callable[[PosixPath], str] = lambda x: str(x).split(".")[0]
         sorted_paths: List = sorted(csv_paths, key=sort_key, reverse=True)
