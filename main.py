@@ -11,7 +11,7 @@ class Config(NamedTuple):
     nprocs: int = 5
     gpu: bool = True
     logfreq: int = 10000
-    nsteps: int = 50000
+    nsteps: int = 50001
     nagents: int = 3
 
     # nets
