@@ -23,7 +23,7 @@ class Config(NamedTuple):
     affine: bool = True
 
     # channel noise
-    sigma: float = 0.1
+    sigma: float = 0.0
 
     # hyperparameters
     eta_ae: float = 1
