@@ -1,7 +1,7 @@
 from experiments.shared_ref_mnist import Experiment
-from functions import run
+from functions import run, parse_args
 from typing import NamedTuple
-import argparse
+import numpy as np
 
 
 # TODO: implement command line overrides and use type hints to provide autocomplete
@@ -10,8 +10,8 @@ class Config(NamedTuple):
     seed: int = 123
     nprocs: int = 5
     gpu: bool = True
-    logfreq: int = 1000
-    nsteps: int = 5001
+    logfreq: int = 10000
+    nsteps: int = 50000
     nagents: int = 3
 
     # nets
@@ -27,28 +27,26 @@ class Config(NamedTuple):
     sigma: float = 0.0
 
     # hyperparameters
-    eta_ae: float = 1.0
+    eta_ae: float = 0
     eta_lsa: float = 0.0
     eta_msa: float = 0.0
     eta_dsa: float = 0.0
 
     # assessment of abstraction
-    nsteps_pred_latent: int = 100
+    nsteps_pred_latent: int = 5000
     bsize_pred_latent: int = 64
 
 
 if __name__ == "__main__":
+    # TODO: create the experiment path here probably
     cfg = Config()
-    parser = argparse.ArgumentParser()
-    for field in cfg._fields:
-        if isinstance(cfg.__getattribute__(field), bool):
-            parser.add_argument(f"--{field}", type=eval)
-        else:
-            parser.add_argument(
-                f"--{field}",
-                type=type(cfg.__getattribute__(field)),
-                default=cfg.__getattribute__(field),
-            )
-    args = parser.parse_args()
-    print("Running with args", args)
-    run(Experiment, Config())
+    args = parse_args(cfg)
+    gridsize = 5
+    # TODO: fix this and make a real hyp search
+    for sigma in np.linspace(0, 1, gridsize):
+        for eta in np.linspace(0, 1, gridsize):
+            args.sigma = round(sigma, 2)
+            args.eta_lsa = round(eta, 2)
+            args.eta_ae = round(1 - eta, 2)
+            print("Running with args", args)
+            run(Experiment, args)

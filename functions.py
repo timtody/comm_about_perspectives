@@ -1,11 +1,28 @@
+import argparse
 import multiprocessing as mp
 import os
 import time
 from multiprocessing import Barrier
-from typing import Callable, Dict, NamedTuple
+from typing import Callable, Dict, List, NamedTuple
+from argparse import Namespace
 
 import c_types
 from chunked_writer import MultiProcessingWriter, TidyReader
+
+
+def parse_args(cfg: NamedTuple):
+    parser = argparse.ArgumentParser()
+    for field in cfg._fields:
+        if isinstance(cfg.__getattribute__(field), bool):
+            parser.add_argument(f"--{field}", type=eval)
+        else:
+            parser.add_argument(
+                f"--{field}",
+                type=type(cfg.__getattribute__(field)),
+                default=cfg.__getattribute__(field),
+            )
+    args = parser.parse_args()
+    return args
 
 
 def create_exp_path(experiment):
@@ -50,8 +67,19 @@ def start_exp(
     exp.run(cfg)
 
 
-def run(experiment: c_types.BaseExperiment, cfg: NamedTuple):
+def run(experiment: c_types.BaseExperiment, cfg: Namespace):
     path: str = create_exp_path(experiment)
     os.makedirs(path)
     barrier = Barrier(cfg.nprocs)
     start_procs(start_exp, cfg, experiment, path, barrier)
+
+
+def run_sweep(experiment: c_types.BaseExperiment, cfgs: List[Namespace]):
+    path: str = create_exp_path(experiment)
+    os.makedirs(path)
+    barrier = Barrier(cfgs[0].nprocs)
+
+    # TODO: maybe just not plot?! or alternatively pass the plotting functions to constructor?
+    # also: finish this correctly
+    for cfg in cfgs:
+        start_procs(start_exp, cfg, experiment, path, barrier)

@@ -46,6 +46,12 @@ class BaseExperiment(ABC):
         self.reader = reader
         self.handin = handin
         self.barrier = barrier
+        if rank == 0:
+            self._dump_cfg()
+
+    def _dump_cfg(self):
+        with open(os.path.join(self.path, "cfg.json"), "w") as f:
+            json.dump(vars(self.cfg), f)
 
     def _run_experiment(self):
         self.pre_forward_hook()

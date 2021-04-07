@@ -8,14 +8,16 @@ import string
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path, PosixPath
-from typing import Callable, List, AnyStr, Tuple
+from typing import Any, Callable, List, AnyStr, Tuple
 
 from pandas.core.frame import DataFrame
 import pandas as pd
 
 
 class TidyWriter:
-    def __init__(self, path: str = "", max_queue_len: int = 1000) -> None:
+    def __init__(
+        self, path: str = "", max_queue_len: int = 1000, global_param: Any = None
+    ) -> None:
         """Writer class with is designed to handle tidy form csv's. Similar
         to the tensorflow summary writers, this writer has a queue and writes to
         disk when the queue is full. This allows to maintain a small memory footprint
@@ -31,6 +33,7 @@ class TidyWriter:
         self.max_queue_len = max_queue_len
         self._init_queue()
         self.blob_name = self._gen_blob_name()
+        self.global_param = global_param
 
     def _init_queue(self):
         self.queue = defaultdict(list)
@@ -72,6 +75,8 @@ class TidyWriter:
             Note how all the metadata can be inferred from the actual data tuple. This property
             allows the asynchronous and unstructured collection of data.
         """
+        if self.global_param is not None:
+            data = (self.global_param, *data)
         self.queue[tag].append(data)
         if len(self.queue) >= self.max_queue_len:
             self._write()

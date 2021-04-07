@@ -15,6 +15,8 @@ from torch.tensor import Tensor
 
 from experiments.experiment import BaseExperiment
 
+# TODO: add the sweep parameters to the writers
+
 
 class Experiment(BaseExperiment):
     @staticmethod
@@ -43,6 +45,7 @@ class Experiment(BaseExperiment):
         df_losses.to_csv("res_losses.csv")
         plot_lineplot(df_losses, "AE")
         plot_relplot(df_losses, "LSA")
+        plot_relplot(df_losses, "LSA-MBVAR")
         plot_relplot(df_losses, "DSA")
         plot_relplot(df_losses, "MSA")
 
@@ -117,6 +120,12 @@ class Experiment(BaseExperiment):
         dsa_loss_a = F.mse_loss(rec_ab, rec_aa.detach())
         dsa_loss_b = F.mse_loss(rec_ba, rec_bb.detach())
 
+        with torch.no_grad():
+            # compute mean batch var per feature
+            # TODO: probably compute running average here.
+            mbvar_a = msg_a.var(dim=0).mean()
+            mbvar_b = msg_b.var(dim=0).mean()
+
         total_loss_a: Tensor = (
             self.cfg.eta_ae * ae_loss_a
             + self.cfg.eta_lsa * lsa_loss_a
@@ -144,10 +153,26 @@ class Experiment(BaseExperiment):
                 (step, lsa_loss_a.item(), "LSA", agent_a.name, agent_b.name),
                 (step, msa_loss_a.item(), "MSA", agent_a.name, agent_b.name),
                 (step, dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
+                (step, mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
+                (
+                    step,
+                    lsa_loss_a.item() / mbvar_a.item(),
+                    "LSA-MBVAR",
+                    agent_a.name,
+                    agent_b.name,
+                ),
                 (step, ae_loss_b.item(), "AE", agent_b.name, agent_a.name),
                 (step, lsa_loss_b.item(), "LSA", agent_b.name, agent_a.name),
                 (step, msa_loss_b.item(), "MSA", agent_b.name, agent_a.name),
                 (step, dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
+                (step, mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
+                (
+                    step,
+                    lsa_loss_b.item() / mbvar_b.item(),
+                    "LSA-MBVAR",
+                    agent_b.name,
+                    agent_a.name,
+                ),
             ],
             tag="loss",
         )
