@@ -14,7 +14,9 @@ def parse_args(cfg: NamedTuple):
     parser = argparse.ArgumentParser()
     for field in cfg._fields:
         if isinstance(cfg.__getattribute__(field), bool):
-            parser.add_argument(f"--{field}", type=eval)
+            parser.add_argument(
+                f"--{field}", type=eval, default=cfg.__getattribute__(field)
+            )
         else:
             parser.add_argument(
                 f"--{field}",
