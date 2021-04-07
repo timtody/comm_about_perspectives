@@ -1,45 +1,58 @@
 import itertools
 import random
-from typing import Any, AnyStr, Tuple
-import typing
+from typing import AnyStr, List, NamedTuple, Tuple
 
-from torch.tensor import Tensor
-
-from c_types import DataFrame, TidyReader
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 from autoencoder import AutoEncoder
+from c_types import DataFrame, TidyReader
 from mnist import MNISTDataset
+from torch.tensor import Tensor
 
 from experiments.experiment import BaseExperiment
 
 
 class Experiment(BaseExperiment):
     @staticmethod
-    def load_data(
-        reader: TidyReader,
-    ) -> Tuple[DataFrame, DataFrame]:
+    def load_data(reader: TidyReader) -> Tuple[DataFrame]:
         df1 = filter_df(
             reader.read("loss", ["Rank", "Step", "Loss", "Type", "Agent_X", "Agent_Y"]),
+            group_keys=["Rank", "Type", "Agent_X", "Agent_Y"],
             sort=True,
-            datapoints=10,
+            datapoints=25,
         )
-        return df1
+        df2 = filter_df(
+            reader.read(
+                "pred_from_latent",
+                ["Rank", "Epoch", "Step", "Value", "Metric", "Type", "Agent"],
+            ),
+            group_keys=["Rank", "Epoch", "Type", "Agent", "Metric"],
+            sort=True,
+            datapoints=25,
+        )
+        return (df1, df2)
 
     @staticmethod
-    def plot(args) -> None:
-        df: DataFrame = args
-        df.to_csv("res.csv")
-        plot_lineplot(df, "AE")
-        plot_relplot(df, "LSA")
-        plot_relplot(df, "DSA")
-        plot_relplot(df, "MSA")
+    def plot(dataframes: Tuple[DataFrame], step: int) -> None:
+        (df_losses, df_prediction) = dataframes
 
-    def run(self, cfg):
+        df_losses.to_csv("res_losses.csv")
+        plot_lineplot(df_losses, "AE")
+        plot_relplot(df_losses, "LSA")
+        plot_relplot(df_losses, "DSA")
+        plot_relplot(df_losses, "MSA")
+
+        df_prediction.to_csv("res_prediction.csv")
+        plot_prediction_errors(df_prediction, step)
+
+    def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
         base = self.generate_autoencoder("baseline")
+        # TODO: change ABCDEFG to something more general, this would fail with more than 7 agents
         agents = [self.generate_autoencoder(f"{i}") for i in "ABCDEFG"[: cfg.nagents]]
 
         agent_index_pairs = list(itertools.combinations(range(len(agents)), r=2))
@@ -54,13 +67,11 @@ class Experiment(BaseExperiment):
 
                 # execute marl-ae step
                 self.sync_ae_step(i, agent_a, agent_b)
-                # TODO: check if this will lead to duplicate loss entries?
-                # this actually will lead to duplicates on a step basis.
-                # is this bad? What does this mean? What is the alternative?
-                if agent_a.name == "agent_0" or agent_b.name == "agent_0":
+                if agent_a.name == "A" or agent_b.name == "A":
                     self.control_step(i, base)
 
             if i % cfg.logfreq == cfg.logfreq - 1:
+                self.predict_from_latent_and_reconstruction([base] + agents, i)
                 self.log(i)
         self.writer.close()
 
@@ -77,6 +88,11 @@ class Experiment(BaseExperiment):
         # compute message and reconstructions
         msg_a = agent_a.encode(batch_a)
         msg_b = agent_b.encode(batch_b)
+
+        # add channel noise to messages
+        msg_a += torch.randn_like(msg_a) * self.cfg.sigma
+        msg_b += torch.randn_like(msg_b) * self.cfg.sigma
+
         ## rec_aa is a's reconstruction of a's message
         ## rec_ab is a's reconstruction of b's message and so forth..
         rec_aa = agent_a.decode(msg_a)
@@ -143,11 +159,43 @@ class Experiment(BaseExperiment):
         agent.opt.zero_grad()
         loss.backward()
         agent.opt.step()
-        self.writer.add((step, loss.item(), "AE", agent.name), tag="loss")
+        self.writer.add((step, loss.item(), "AE", agent.name, ""), tag="loss")
+
+    def predict_from_latent_and_reconstruction(
+        self, agents: List[AutoEncoder], step: int
+    ) -> None:
+        # TODO: Implement n-best metric
+        for agent in agents:
+            mlp: MLP = MLP(self.cfg.latent_dim).to(self.dev)
+            mlp_rec: CNN = CNN().to(self.dev)
+            for i in range(self.cfg.nsteps_pred_latent):
+                ims, labels = map(
+                    lambda x: x.to(self.dev),
+                    self.dataset.sample_with_label(self.cfg.bsize_pred_latent),
+                )
+                latent = agent.encode(ims)
+                reconstruction = agent(ims)
+
+                loss_latent = mlp.train(latent, labels)
+                acc_latent = mlp.compute_acc(latent, labels)
+
+                loss_rec = mlp_rec.train(reconstruction, labels)
+                acc_rec = mlp_rec.compute_acc(reconstruction, labels)
+
+                self.writer.add_multiple(
+                    [
+                        (step, i, loss_latent, "Loss", "Latent", agent.name),
+                        (step, i, acc_latent, "Accuracy", "Latent", agent.name),
+                        (step, i, loss_rec, "Loss", "Reconstruction", agent.name),
+                        (step, i, acc_rec, "Accuracy", "Reconstruction", agent.name),
+                    ],
+                    tag="pred_from_latent",
+                )
 
 
 def filter_df(
     df: DataFrame,
+    group_keys: List[AnyStr],
     datapoints: int = 50,
     sort: bool = False,
     filter: bool = True,
@@ -155,10 +203,27 @@ def filter_df(
     if sort:
         df = df.sort_values(by=["Step"])
     if filter:
-        filters = ["Rank", "Type", "Agent_X", "Agent_Y"]
-        nsteps = len(list(df.groupby(filters).groups.values())[0])
-        df = df.groupby(filters).apply(lambda x: x[:: nsteps // datapoints])
+        nsteps = len(list(df.groupby(group_keys).groups.values())[0])
+        df = df.groupby(group_keys).apply(lambda x: x[:: nsteps // datapoints])
     return df
+
+
+def plot_prediction_errors(df: DataFrame, step: int):
+    sns.relplot(
+        data=df[df["Epoch"] == step],
+        x="Step",
+        y="Value",
+        col="Type",
+        row="Metric",
+        hue="Agent",
+        style="Agent",
+        markers=True,
+        dashes=False,
+        kind="line",
+        facet_kws=dict(sharey=False, margin_titles=True),
+    )
+    plt.savefig("pred.pdf")
+    plt.savefig("pred.svg")
 
 
 def plot_relplot(df: DataFrame, type: str):
@@ -193,3 +258,57 @@ def plot_lineplot(df: DataFrame, type: str):
     )
     plt.savefig(f"lineplot_{type}.pdf")
     plt.savefig(f"lineplot_{type}.svg")
+
+
+class MLP(nn.Module):
+    def __init__(self, input_size: int):
+        super().__init__()
+        self.l = nn.Linear(input_size, 10)
+        self.opt = optim.Adam(self.parameters())
+
+    def forward(self, x):
+        return self.l(x)
+
+    def compute_acc(self, ims, labels):
+        pred = self.l(ims).argmax(dim=1)
+        acc = (pred == labels).float().mean()
+        return acc.item()
+
+    def train(self, inputs, targets):
+        x = self.l(inputs)
+        loss = F.cross_entropy(x, targets)
+        self.opt.zero_grad()
+        loss.backward()
+        self.opt.step()
+        return loss.item()
+
+
+class CNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1)
+        self.conv2 = nn.Conv2d(16, 16, kernel_size=3, stride=2, padding=1)
+        self.conv3 = nn.Conv2d(16, 10, kernel_size=3, stride=2, padding=1)
+        self.l1 = nn.Linear(160, 10)
+        self.opt = optim.Adam(self.parameters())
+
+    def forward(self, xb):
+        xb = xb.view(-1, 1, 28, 28)
+        xb = F.relu(self.conv1(xb))
+        xb = F.relu(self.conv2(xb))
+        xb = F.relu(self.conv3(xb))
+        xb = self.l1(xb.reshape(-1, 160))
+        return xb
+
+    def compute_acc(self, ims, labels):
+        pred = self(ims).argmax(dim=1)
+        acc = (pred == labels).float().mean()
+        return acc.item()
+
+    def train(self, inputs, targets):
+        x = self(inputs)
+        loss = F.cross_entropy(x, targets)
+        self.opt.zero_grad()
+        loss.backward()
+        self.opt.step()
+        return loss.item()

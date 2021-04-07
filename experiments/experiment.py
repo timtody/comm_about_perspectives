@@ -68,12 +68,14 @@ class BaseExperiment(ABC):
 
     def _plot(self, step):
         data = self.load_data(self.reader)
+        # TODO: let's not do that. Let's instead overwrite the plots and results
+        # Since it makes no sense to store the old data multiple times?!
         log_path = os.path.join(self.path, "plots", f"step_{step}")
         cwd = os.getcwd()
         os.makedirs(log_path)
         os.chdir(log_path)
         plt.figure()
-        self.plot(data)
+        self.plot(data, step)
         plt.close()
         os.chdir(cwd)
 
