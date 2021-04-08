@@ -3,8 +3,8 @@
 #SBATCH -C v100-16g                             # reserving 16 GB GPUs only
                                                 # (use "-C v100-32g" for 32 GB GPUs only)
 #SBATCH -A imi@gpu
-#SBATCH --output=out/hypsearch-tt-01%j.out      # output file (%j = job ID)
-#SBATCH --error=err/hypsearch-tt-01%j.err       # error file (%j = job ID)
+#SBATCH --output=out/%j                         # output file (%j = job ID)
+#SBATCH --error=err/%j                          # error file (%j = job ID)
 #SBATCH --time=20:00:00                         # maximum allocation time "(HH:MM:SS)"
 #SBATCH --nodes=1                               # reserving 1 node
 #SBATCH --ntasks=1                              # reserving 9 tasks (or MPI processes)
