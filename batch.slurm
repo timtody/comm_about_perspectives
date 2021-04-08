@@ -2,6 +2,7 @@
 #SBATCH --job-name=hypsearch-tt-01              # name of job
 #SBATCH -C v100-16g                             # reserving 16 GB GPUs only
                                                 # (use "-C v100-32g" for 32 GB GPUs only)
+#SBATCH -A imi@gpu
 #SBATCH --qos=qos_gpu-dev                       # QoS
 #SBATCH --output=hypsearch-tt-01%j.out          # output file (%j = job ID)
 #SBATCH --error=hypsearch-tt-01%j.err           # error file (%j = job ID)
