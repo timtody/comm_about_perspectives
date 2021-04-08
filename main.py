@@ -1,5 +1,5 @@
 from experiments.shared_ref_mnist import Experiment
-from functions import run, parse_args
+from functions import run, merge_cfg_with_cli
 from typing import NamedTuple
 import numpy as np
 
@@ -40,9 +40,11 @@ class Config(NamedTuple):
 if __name__ == "__main__":
     # TODO: create the experiment path here probably
     cfg = Config()
-    args = parse_args(cfg)
+    args = merge_cfg_with_cli(cfg)
     gridsize = 5
     # TODO: fix this and make a real hyp search
+    tb_tracking_vars = "sigma", "eta_lsa", "eta_ae"
+    args.tb_tracking_vars = tb_tracking_vars
     for sigma in np.linspace(0, 1, gridsize):
         for eta in np.linspace(0, 1, gridsize):
             args.sigma = round(sigma, 2)

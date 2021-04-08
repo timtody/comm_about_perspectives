@@ -15,6 +15,8 @@ from torch.tensor import Tensor
 
 from experiments.experiment import BaseExperiment
 
+from torch.utils.tensorboard import SummaryWriter
+
 # TODO: add the sweep parameters to the writers
 
 
@@ -54,6 +56,12 @@ class Experiment(BaseExperiment):
 
     def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
+
+        tracking = ""
+        for varname in self.cfg.tb_tracking_vars:
+            tracking += f"{varname}:{self.cfg.__getattribute__(varname)}_"
+        tb_path = f"{self.path}/tb{tracking}/{self.rank}"
+        self.tb = SummaryWriter(tb_path)
         base = self.generate_autoencoder("baseline")
         # TODO: change ABCDEFG to something more general, this would fail with more than 7 agents
         agents = [self.generate_autoencoder(f"{i}") for i in "ABCDEFG"[: cfg.nagents]]
@@ -125,6 +133,9 @@ class Experiment(BaseExperiment):
             # TODO: probably compute running average here.
             mbvar_a = msg_a.var(dim=0).mean()
             mbvar_b = msg_b.var(dim=0).mean()
+
+        self.tb.add_scalar(f"mbvar{agent_a.name + agent_b.name}", mbvar_a, step)
+        self.tb.add_scalar(f"mbvar{agent_b.name + agent_a.name}", mbvar_b, step)
 
         total_loss_a: Tensor = (
             self.cfg.eta_ae * ae_loss_a

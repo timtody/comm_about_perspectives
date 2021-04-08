@@ -10,7 +10,7 @@ import c_types
 from chunked_writer import MultiProcessingWriter, TidyReader
 
 
-def parse_args(cfg: NamedTuple):
+def merge_cfg_with_cli(cfg: NamedTuple):
     parser = argparse.ArgumentParser()
     for field in cfg._fields:
         if isinstance(cfg.__getattribute__(field), bool):
