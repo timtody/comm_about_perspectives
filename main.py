@@ -13,7 +13,6 @@ from functions import (
 )
 
 
-# TODO: implement command line overrides and use type hints to provide autocomplete
 class Config(NamedTuple):
     # experiement params
     seed: int = 123
