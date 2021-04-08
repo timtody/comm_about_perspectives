@@ -5,7 +5,7 @@
 #SBATCH -A imi@gpu
 #SBATCH --output=out/hypsearch-tt-01%j.out      # output file (%j = job ID)
 #SBATCH --error=err/hypsearch-tt-01%j.err       # error file (%j = job ID)
-#SBATCH --time=24:00:00                         # maximum allocation time "(HH:MM:SS)"
+#SBATCH --time=20:00:00                         # maximum allocation time "(HH:MM:SS)"
 #SBATCH --nodes=1                               # reserving 1 node
 #SBATCH --ntasks=1                              # reserving 9 tasks (or MPI processes)
 #SBATCH --gres=gpu:4                            # reserving 4 GPUs
