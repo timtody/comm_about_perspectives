@@ -13,7 +13,6 @@
 #SBATCH --cpus-per-task=4                       # reserving 10 CPUs per task (and associated memory)
 
 module purge                                    # purging modules inherited by default
-conda deactivate                                # deactivating environments inherited by default
 module load python/3.8.2
 module load pytorch-gpu/py3/1.8.0               # loading modules
 
