@@ -21,6 +21,7 @@ class Config(NamedTuple):
     logfreq: int = 10000
     nsteps: int = 50001
     nagents: int = 3
+    ngpus: int = 1
 
     # hypsearch
     grid_size: int = 2
