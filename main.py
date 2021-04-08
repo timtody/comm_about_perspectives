@@ -87,8 +87,8 @@ if __name__ == "__main__":
     cfg = Config()
     args = merge_cfg_with_cli(cfg)
     # TODO: fix this and make a real hyp search
-    tacking_vars = "sigma", "eta_lsa", "eta_ae"
-    args.tacking_vars = tacking_vars
+    tracking_vars = "sigma", "eta_lsa", "eta_ae"
+    args.tracking_vars = tracking_vars
 
     sweep_root_path = generate_sweep_path(Experiment)
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             args.eta_ae = round(1 - eta, 2)
             print("Running with args", args)
 
-            path: str = generate_run_path(sweep_root_path, args, args.tacking_vars)
+            path: str = generate_run_path(sweep_root_path, args, args.tracking_vars)
             procs = run_single_from_sweep(Experiment, args, path)
             processes += procs
 
