@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=hypsearch-tt-01              # name of job
-#SBATCH -C v100-16g                             # reserving 16 GB GPUs only
+#SBATCH -C v100-32g                             # reserving 16 GB GPUs only
                                                 # (use "-C v100-32g" for 32 GB GPUs only)
 #SBATCH -A imi@gpu
 #SBATCH --output=out/%j                         # output file (%j = job ID)

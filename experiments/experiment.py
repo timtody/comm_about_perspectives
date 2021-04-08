@@ -17,9 +17,9 @@ def set_seeds(rank):
     np.random.seed(100 + rank)
 
 
-def get_device(gpu=False):
+def get_device(gpu=False, rank: int = 0, ngpus: int = 1):
     return (
-        torch.device("cuda")
+        torch.device(f"cuda:{rank % ngpus}")
         if gpu and torch.cuda.is_available()
         else torch.device("cpu")
     )
@@ -41,7 +41,7 @@ class BaseExperiment(ABC):
         self.rank = rank
         self.path = path
         self._set_seeds()
-        self.dev: torch.Device = get_device(self.cfg.gpu)
+        self.dev: torch.Device = get_device(self.cfg.gpu, rank, cfg.ngpus)
         self.writer = writer
         self.reader = reader
         self.handin = handin
