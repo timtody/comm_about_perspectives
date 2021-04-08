@@ -5,11 +5,11 @@
 #SBATCH -A imi@gpu
 #SBATCH --output=out/hypsearch-tt-01%j.out      # output file (%j = job ID)
 #SBATCH --error=err/hypsearch-tt-01%j.err       # error file (%j = job ID)
-#SBATCH --time=00:10:00                         # maximum allocation time "(HH:MM:SS)"
+#SBATCH --time=24:00:00                         # maximum allocation time "(HH:MM:SS)"
 #SBATCH --nodes=1                               # reserving 1 node
-#SBATCH --ntasks=9                              # reserving 9 tasks (or MPI processes)
+#SBATCH --ntasks=1                              # reserving 9 tasks (or MPI processes)
 #SBATCH --gres=gpu:4                            # reserving 4 GPUs
-#SBATCH --cpus-per-task=4                       # reserving 4 CPUs per task (and associated memory)
+#SBATCH --cpus-per-task=40                      # reserving 40 CPUs per task (and associated memory)
 
 module purge                                    # purging modules inherited by default
 module load python/3.8.2
