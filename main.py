@@ -46,7 +46,7 @@ class Config(NamedTuple):
     eta_dsa: float = 0.0
 
     # assessment of abstraction
-    nsteps_pred_latent: int = 5000
+    nsteps_pred_latent: int = 2000
     bsize_pred_latent: int = 128
 
 

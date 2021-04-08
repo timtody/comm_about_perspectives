@@ -17,4 +17,4 @@ module load python/3.8.2
 
 set -x                                          # activating echo of launched commands
 
-srun python main.py --nsamples 10 --nprocs 4 --ngpus 4 --logfreq 10
+srun python main.py --nsamples 10 --nprocs 4 --ngpus 4 --logfreq 10 --nsteps_pred_latent 0
