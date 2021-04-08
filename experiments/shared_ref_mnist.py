@@ -42,26 +42,23 @@ class Experiment(BaseExperiment):
 
     @staticmethod
     def plot(dataframes: Tuple[DataFrame], step: int) -> None:
-        (df_losses, df_prediction) = dataframes
+        pass
+        # (df_losses, df_prediction) = dataframes
 
-        df_losses.to_csv("res_losses.csv")
-        plot_lineplot(df_losses, "AE")
-        plot_relplot(df_losses, "LSA")
-        plot_relplot(df_losses, "LSA-MBVAR")
-        plot_relplot(df_losses, "DSA")
-        plot_relplot(df_losses, "MSA")
+        # df_losses.to_csv("res_losses.csv")
+        # plot_lineplot(df_losses, "AE")
+        # plot_relplot(df_losses, "LSA")
+        # plot_relplot(df_losses, "LSA-MBVAR")
+        # plot_relplot(df_losses, "DSA")
+        # plot_relplot(df_losses, "MSA")
 
-        df_prediction.to_csv("res_prediction.csv")
-        plot_prediction_errors(df_prediction, step)
+        # df_prediction.to_csv("res_prediction.csv")
+        # plot_prediction_errors(df_prediction, step)
 
     def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
 
-        # TODO: extract this
-        tracking = ""
-        for varname in self.cfg.tb_tracking_vars:
-            tracking += f"{varname}:{self.cfg.__getattribute__(varname)}_"
-        tb_path = f"{self.path}/tb_{tracking}/{self.rank}"
+        tb_path = f"{self.path}/tb/{self.rank}"
         self.tb = SummaryWriter(tb_path)
 
         base = self.generate_autoencoder("baseline")
@@ -85,7 +82,8 @@ class Experiment(BaseExperiment):
 
             if i % cfg.logfreq == cfg.logfreq - 1:
                 self.predict_from_latent_and_reconstruction([base] + agents, i)
-                self.log(i)
+                # TODO: UNCOMMENT
+                # self.log(i)
         self.writer.close()
 
     def generate_autoencoder(self, name: AnyStr):
@@ -359,3 +357,7 @@ class CNN(nn.Module):
         loss.backward()
         self.opt.step()
         return loss.item()
+
+
+if __name__ == "__main__":
+    ...

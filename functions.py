@@ -2,9 +2,12 @@ import argparse
 import multiprocessing as mp
 import os
 import time
-from multiprocessing import Barrier
-from typing import Callable, Dict, List, NamedTuple
 from argparse import Namespace
+from multiprocessing import Barrier
+from multiprocessing.context import Process
+from typing import Callable, Dict, List, NamedTuple
+
+import copy
 
 import c_types
 from chunked_writer import MultiProcessingWriter, TidyReader
@@ -27,8 +30,8 @@ def merge_cfg_with_cli(cfg: NamedTuple):
     return args
 
 
-def create_exp_path(experiment):
-    exp_path = os.path.join("results", experiment.__module__.split(".")[1])
+def create_exp_name_and_datetime_path(experiment):
+    exp_path = os.path.join(experiment.__module__.split(".")[1])
     ymd_path = os.path.join(exp_path, time.strftime("%Y-%m-%d"))
     hms_path = os.path.join(ymd_path, time.strftime("%H-%M-%S"))
     return hms_path
@@ -48,12 +51,34 @@ def start_procs(
         writer = c_types.MultiProcessingWriter(data_path, rank=rank)
         reader = c_types.TidyReader(data_path)
         proc = mp.Process(
-            target=fn, args=(experiment, cfg, rank, writer, reader, path, barrier)
+            target=fn,
+            args=(experiment, copy.deepcopy(cfg), rank, writer, reader, path, barrier),
         )
         proc.start()
         processes.append(proc)
     for proc in processes:
         proc.join()
+
+
+def start_procs_without_join(
+    cfg: Dict = {},
+    experiment: c_types.BaseExperiment = None,
+    path: str = "",
+    barrier: Barrier = None,
+) -> List[Process]:
+    processes = []
+    data_path = os.path.join(path, "data")
+    os.makedirs(data_path)
+    for rank in range(cfg.nprocs):
+        writer = c_types.MultiProcessingWriter(data_path, rank=rank)
+        reader = c_types.TidyReader(data_path)
+        proc = mp.Process(
+            target=start_exp,
+            args=(experiment, copy.deepcopy(cfg), rank, writer, reader, path, barrier),
+        )
+        # proc.start()
+        processes.append(proc)
+    return processes
 
 
 def start_exp(
@@ -69,19 +94,15 @@ def start_exp(
     exp.run(cfg)
 
 
-def run(experiment: c_types.BaseExperiment, cfg: Namespace):
-    path: str = create_exp_path(experiment)
+def run(experiment: c_types.BaseExperiment, cfg: Namespace, path: str):
     os.makedirs(path)
     barrier = Barrier(cfg.nprocs)
     start_procs(start_exp, cfg, experiment, path, barrier)
 
 
-def run_sweep(experiment: c_types.BaseExperiment, cfgs: List[Namespace]):
-    path: str = create_exp_path(experiment)
+def run_single_from_sweep(
+    experiment: c_types.BaseExperiment, cfg: Namespace, path: str
+) -> List[Process]:
     os.makedirs(path)
-    barrier = Barrier(cfgs[0].nprocs)
-
-    # TODO: maybe just not plot?! or alternatively pass the plotting functions to constructor?
-    # also: finish this correctly
-    for cfg in cfgs:
-        start_procs(start_exp, cfg, experiment, path, barrier)
+    barrier = Barrier(cfg.nprocs)
+    return start_procs_without_join(cfg, experiment, path, barrier)

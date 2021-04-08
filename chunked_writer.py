@@ -90,6 +90,9 @@ class TidyWriter:
         if len(self.queue) > 0:
             self._write()
 
+    def __repr__(self) -> str:
+        return "TidyReader"
+
 
 class MultiProcessingWriter(TidyWriter):
     def __init__(self, path: str, max_queue_len: int = 100, rank: int = 0) -> None:
@@ -99,6 +102,9 @@ class MultiProcessingWriter(TidyWriter):
     def add(self, data: tuple, tag: str = "default") -> None:
         data = (self.rank, *data)
         super().add(data, tag=tag)
+
+    def __repr__(self) -> str:
+        return super().__repr__() + f" on rank {self.rank}"
 
 
 class TidyReader:
@@ -137,3 +143,6 @@ class TidyReader:
             dataframes.append(df)
         dataframe = pd.concat(dataframes, ignore_index=True)
         return dataframe
+
+    def __repr__(self) -> str:
+        return "TidyReader"

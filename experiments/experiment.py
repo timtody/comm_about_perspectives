@@ -36,6 +36,7 @@ class BaseExperiment(ABC):
         barrier: Barrier,
         handin: Dict = {},
     ) -> None:
+        print(rank, writer)
         self.cfg = cfg
         self.step: Literal = 0
         self.rank = rank
@@ -47,11 +48,11 @@ class BaseExperiment(ABC):
         self.handin = handin
         self.barrier = barrier
         if rank == 0:
-            self._dump_cfg()
+            self._dump_cfg(cfg)
 
-    def _dump_cfg(self):
+    def _dump_cfg(self, cfg):
         with open(os.path.join(self.path, "cfg.json"), "w") as f:
-            json.dump(vars(self.cfg), f)
+            json.dump(vars(cfg), f)
 
     def _run_experiment(self):
         self.pre_forward_hook()
