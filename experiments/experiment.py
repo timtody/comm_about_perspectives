@@ -36,7 +36,6 @@ class BaseExperiment(ABC):
         barrier: Barrier,
         handin: Dict = {},
     ) -> None:
-        print(rank, writer)
         self.cfg = cfg
         self.step: Literal = 0
         self.rank = rank
