@@ -12,7 +12,7 @@ from functions import (
     run_single_from_sweep,
 )
 
-
+# TODO: make this config modular!
 class Config(NamedTuple):
     # experiement params
     seed: int = 123
@@ -25,6 +25,7 @@ class Config(NamedTuple):
 
     # hypsearch
     grid_size: int = 2
+    nsamples: int = 10
 
     # nets
     latent_dim: int = 30
@@ -32,8 +33,8 @@ class Config(NamedTuple):
     bsize: int = 64
 
     # bnorm
-    bnorm: bool = True
-    affine: bool = True
+    bnorm: bool = False
+    affine: bool = False
 
     # channel noise
     sigma: float = 0.0
@@ -84,26 +85,27 @@ def generate_run_path(root_path, args, tracking_vars):
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     multiprocessing.set_start_method("fork")
-    # TODO: create the experiment path here probably
     cfg = Config()
     args = merge_cfg_with_cli(cfg)
-    # TODO: fix this and make a real hyp search
+
     tracking_vars = "sigma", "eta_lsa", "eta_ae"
     args.tracking_vars = tracking_vars
 
     sweep_root_path = generate_sweep_path(Experiment)
 
     processes = []
-    for sigma in np.linspace(0, 1, args.grid_size):
-        for eta in np.linspace(0, 1, args.grid_size):
-            args.sigma = round(sigma, 2)
-            args.eta_lsa = round(eta, 2)
-            args.eta_ae = round(1 - eta, 2)
-            # print("Running with args", args)
-            path: str = generate_run_path(sweep_root_path, args, args.tracking_vars)
-            print("Starting experiment on path", path)
-            procs = run_single_from_sweep(Experiment, args, path)
-            processes += procs
+    for _ in range(args.nsamples):
+        eta = np.random.rand()
+        sigma = np.random.rand()
+
+        args.sigma = round(sigma, 2)
+        args.eta_lsa = round(eta, 2)
+        args.eta_ae = round(1 - eta, 2)
+
+        path: str = generate_run_path(sweep_root_path, args, args.tracking_vars)
+        print("Starting experiment on path", path)
+        procs = run_single_from_sweep(Experiment, args, path)
+        processes += procs
 
     for proc in processes:
         proc.start()

@@ -1,4 +1,5 @@
 import itertools
+import os
 import random
 from typing import AnyStr, List, NamedTuple, Tuple
 
@@ -12,10 +13,9 @@ from autoencoder import AutoEncoder
 from c_types import DataFrame, TidyReader
 from mnist import MNISTDataset
 from torch.tensor import Tensor
+from torch.utils.tensorboard import SummaryWriter
 
 from experiments.experiment import BaseExperiment
-
-from torch.utils.tensorboard import SummaryWriter
 
 # TODO: add the sweep parameters to the writers
 
@@ -64,6 +64,7 @@ class Experiment(BaseExperiment):
         base = self.generate_autoencoder("baseline")
         # TODO: change ABCDEFG to something more general, this would fail with more than 7 agents
         agents = [self.generate_autoencoder(f"{i}") for i in "ABCDEFG"[: cfg.nagents]]
+        agents_and_base = [base] + agents
 
         agent_index_pairs = list(itertools.combinations(range(len(agents)), r=2))
         for i in range(cfg.nsteps):
@@ -81,10 +82,15 @@ class Experiment(BaseExperiment):
                     self.control_step(i, base)
 
             if i % cfg.logfreq == cfg.logfreq - 1:
-                self.predict_from_latent_and_reconstruction([base] + agents, i)
-                # TODO: UNCOMMENT
-                # self.log(i)
+                self.predict_from_latent_and_reconstruction(agents_and_base, i)
+                self.save_params(i, agents_and_base)
         self.writer.close()
+
+    def save_params(self, step: int, agents: List[AutoEncoder]):
+        path = os.path.join(self.path, "params", f"step_{step}", f"rank_{self.rank}")
+        os.makedirs(path)
+        for agent in agents:
+            torch.save(agent.state_dict(), os.path.join(path, f"{agent.name}.pt"))
 
     def generate_autoencoder(self, name: AnyStr):
         return AutoEncoder(
@@ -136,6 +142,9 @@ class Experiment(BaseExperiment):
 
         ab_name = agent_a.name + agent_b.name
         ba_name = agent_b.name + agent_a.name
+
+        self.tb.add_scalar(f"AEloss{ab_name}", ae_loss_a, step)
+        self.tb.add_scalar(f"AEloss{ba_name}", ae_loss_b, step)
 
         self.tb.add_scalar(f"mbvar{ab_name}", mbvar_a, step)
         self.tb.add_scalar(f"mbvar{ba_name}", mbvar_b, step)
@@ -226,6 +235,13 @@ class Experiment(BaseExperiment):
 
                 loss_rec = mlp_rec.train(reconstruction, labels)
                 acc_rec = mlp_rec.compute_acc(reconstruction, labels)
+
+                self.tb.add_scalar(
+                    f"acc_from_latent_{agent.name}_epoch_{step}", acc_latent, i
+                )
+                self.tb.add_scalar(
+                    f"acc_from_rec_{agent.name}_epoch_{step}", acc_rec, i
+                )
 
                 self.writer.add_multiple(
                     [
