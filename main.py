@@ -98,9 +98,9 @@ if __name__ == "__main__":
             args.sigma = round(sigma, 2)
             args.eta_lsa = round(eta, 2)
             args.eta_ae = round(1 - eta, 2)
-            print("Running with args", args)
-
+            # print("Running with args", args)
             path: str = generate_run_path(sweep_root_path, args, args.tracking_vars)
+            print("Starting experiment on path", path)
             procs = run_single_from_sweep(Experiment, args, path)
             processes += procs
 
