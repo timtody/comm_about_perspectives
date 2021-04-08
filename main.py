@@ -21,7 +21,7 @@ class Config(NamedTuple):
     logfreq: int = 10000
     nsteps: int = 50001
     nagents: int = 3
-    ngpus: int = 1
+    ngpus: int = 4
 
     # hypsearch
     grid_size: int = 2
@@ -30,7 +30,7 @@ class Config(NamedTuple):
     # nets
     latent_dim: int = 30
     lr: float = 0.001
-    bsize: int = 64
+    bsize: int = 128
 
     # bnorm
     bnorm: bool = False
@@ -40,14 +40,14 @@ class Config(NamedTuple):
     sigma: float = 0.0
 
     # hyperparameters
-    eta_ae: float = 0
+    eta_ae: float = 0.0
     eta_lsa: float = 0.0
     eta_msa: float = 0.0
     eta_dsa: float = 0.0
 
     # assessment of abstraction
     nsteps_pred_latent: int = 5000
-    bsize_pred_latent: int = 64
+    bsize_pred_latent: int = 128
 
 
 def generate_exp_path(exp, args, tracking_vars):
@@ -83,6 +83,7 @@ def generate_run_path(root_path, args, tracking_vars):
 
 
 if __name__ == "__main__":
+    # TODO: generate sbatch script on the fly probably
     multiprocessing.freeze_support()
     multiprocessing.set_start_method("fork")
     cfg = Config()
