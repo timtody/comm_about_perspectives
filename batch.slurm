@@ -10,7 +10,6 @@
 #SBATCH --ntasks=9                              # reserving 4 tasks (or MPI processes)
 #SBATCH --gres=gpu:4                            # reserving 4 GPUs
 #SBATCH --cpus-per-task=4                       # reserving 10 CPUs per task (and associated memory)
-#SBATCH --hint=nomultithreads                   # deactivating hyperthreading
 
 module purge                                    # purging modules inherited by default
 conda deactivate                                # deactivating environments inherited by default
