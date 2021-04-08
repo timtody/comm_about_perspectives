@@ -57,11 +57,13 @@ class Experiment(BaseExperiment):
     def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
 
+        # TODO: extract this
         tracking = ""
         for varname in self.cfg.tb_tracking_vars:
             tracking += f"{varname}:{self.cfg.__getattribute__(varname)}_"
-        tb_path = f"{self.path}/tb{tracking}/{self.rank}"
+        tb_path = f"{self.path}/tb_{tracking}/{self.rank}"
         self.tb = SummaryWriter(tb_path)
+
         base = self.generate_autoencoder("baseline")
         # TODO: change ABCDEFG to something more general, this would fail with more than 7 agents
         agents = [self.generate_autoencoder(f"{i}") for i in "ABCDEFG"[: cfg.nagents]]
@@ -134,8 +136,17 @@ class Experiment(BaseExperiment):
             mbvar_a = msg_a.var(dim=0).mean()
             mbvar_b = msg_b.var(dim=0).mean()
 
-        self.tb.add_scalar(f"mbvar{agent_a.name + agent_b.name}", mbvar_a, step)
-        self.tb.add_scalar(f"mbvar{agent_b.name + agent_a.name}", mbvar_b, step)
+        ab_name = agent_a.name + agent_b.name
+        ba_name = agent_b.name + agent_a.name
+
+        self.tb.add_scalar(f"mbvar{ab_name}", mbvar_a, step)
+        self.tb.add_scalar(f"mbvar{ba_name}", mbvar_b, step)
+
+        self.tb.add_scalar(f"lsa{ab_name}", lsa_loss_a, step)
+        self.tb.add_scalar(f"lsa{ba_name}", lsa_loss_b, step)
+
+        self.tb.add_scalar(f"lsa-mbvar{ab_name}", lsa_loss_a / mbvar_a, step)
+        self.tb.add_scalar(f"lsa-mbvar{ba_name}", lsa_loss_b / mbvar_b, step)
 
         total_loss_a: Tensor = (
             self.cfg.eta_ae * ae_loss_a
