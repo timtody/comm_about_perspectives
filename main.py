@@ -18,7 +18,7 @@ class Config(NamedTuple):
     seed: int = 123
     nprocs: int = 1
     gpu: bool = True
-    logfreq: int = 10000
+    logfreq: int = 1000
     nsteps: int = 50001
     nagents: int = 3
     ngpus: int = 4
