@@ -5,7 +5,12 @@ import subprocess
 
 
 def unpack_args(**kwargs):
-    return "".join(map(lambda kv: f"--{kv[0]} {kv[1]} ", kwargs.items()))
+    return "".join(
+        map(
+            lambda kv: f"--{kv[0]} {kv[1] if not isinstance(kv[1], bool) else ''} ",
+            kwargs.items(),
+        )
+    )
 
 
 def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
