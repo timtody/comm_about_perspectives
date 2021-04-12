@@ -14,5 +14,5 @@ if not os.path.exists(args.path):
     os.makedirs(args.path)
 writer = MultiProcessingWriter(args.path, rank=args.rank)
 reader = TidyReader(args.path)
-exp = Experiment(cfg, args.rank, writer, reader, args.path)
+exp = Experiment(args, args.rank, writer, reader, args.path)
 exp.run(args)
