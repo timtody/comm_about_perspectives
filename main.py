@@ -116,7 +116,7 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
 
-    tracking_vars = "sigma", "eta_lsa", "eta_ae"
+    tracking_vars = "sigma", "eta_lsa", "eta_ae", "eta_dsa", "eta_msa"
     sweep_root_path = generate_sweep_path(Experiment)
 
     if args.mp_method == "slurm":
@@ -127,7 +127,7 @@ if __name__ == "__main__":
         args.sigma = round(np.random.rand(), 3)
         args.eta_lsa = round(np.random.rand(), 3)
         args.eta_ae = round(np.random.rand(), 3)
-        args.eta_ds = round(np.random.rand(), 3)
+        args.eta_dsa = round(np.random.rand(), 3)
         args.eta_msa = round(np.random.rand(), 3)
 
         path: str = generate_run_path(sweep_root_path, args, tracking_vars)
