@@ -124,12 +124,11 @@ if __name__ == "__main__":
 
     processes = []
     for _ in range(args.nsamples):
-        eta = np.random.rand()
-        sigma = np.random.rand()
-
-        args.sigma = round(sigma, 2)
-        args.eta_lsa = round(eta, 2)
-        args.eta_ae = round(1 - eta, 2)
+        args.sigma = round(np.random.rand(), 3)
+        args.eta_lsa = round(np.random.rand(), 3)
+        args.eta_ae = round(np.random.rand(), 3)
+        args.eta_ds = round(np.random.rand(), 3)
+        args.eta_msa = round(np.random.rand(), 3)
 
         path: str = generate_run_path(sweep_root_path, args, tracking_vars)
         print("Starting experiment on path", path)

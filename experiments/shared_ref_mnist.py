@@ -46,22 +46,12 @@ class Experiment(BaseExperiment):
     @staticmethod
     def plot(dataframes: Tuple[DataFrame], step: int) -> None:
         pass
-        # (df_losses, df_prediction) = dataframes
-
-        # df_losses.to_csv("res_losses.csv")
-        # plot_lineplot(df_losses, "AE")
-        # plot_relplot(df_losses, "LSA")
-        # plot_relplot(df_losses, "LSA-MBVAR")
-        # plot_relplot(df_losses, "DSA")
-        # plot_relplot(df_losses, "MSA")
-
-        # df_prediction.to_csv("res_prediction.csv")
-        # plot_prediction_errors(df_prediction, step)
 
     def log(self, step: int, agents):
         self.predict_from_latent_and_reconstruction(agents, step)
         self.save_params(step, agents)
-        return super().log(step=step)
+        self.writer._write()
+        # return super().log(step=step)
 
     def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
@@ -181,11 +171,11 @@ class Experiment(BaseExperiment):
             self.tb.add_scalar(f"mbvar{ab_name}", mbvar_a, step)
             self.tb.add_scalar(f"mbvar{ba_name}", mbvar_b, step)
 
-            self.tb.add_scalar(f"lsa{ab_name}", lsa_loss_a, step)
-            self.tb.add_scalar(f"lsa{ba_name}", lsa_loss_b, step)
+            self.tb.add_scalar(f"LSAloss{ab_name}", lsa_loss_a, step)
+            self.tb.add_scalar(f"LSAloss{ba_name}", lsa_loss_b, step)
 
-            self.tb.add_scalar(f"lsa-mbvar{ab_name}", lsa_loss_a / mbvar_a, step)
-            self.tb.add_scalar(f"lsa-mbvar{ba_name}", lsa_loss_b / mbvar_b, step)
+            self.tb.add_scalar(f"LSA-mbvar{ab_name}", lsa_loss_a / mbvar_a, step)
+            self.tb.add_scalar(f"LSA-mbvar{ba_name}", lsa_loss_b / mbvar_b, step)
 
             self.writer.add_multiple(
                 [
