@@ -29,6 +29,7 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
         f"set -x\n"
         f"srun python run_single_slurm.py --rank {rank} --path {path} {unpack_args(**vars(cfg))}\n"
     )
-    subprocess.run(f"echo {sbatch_file} > tmp", shell=True)
+    with open("tmp", "w") as f:
+        f.writelines(sbatch_file)
     subprocess.run(["sbatch", "tmp"])
     # subprocess.run(["rm", "tmp"])
