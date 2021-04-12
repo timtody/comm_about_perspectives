@@ -69,7 +69,7 @@ class BaseExperiment(ABC):
 
     def log(self, step: int = 0):
         self.writer._write()
-        self.barrier.wait()
+        # self.barrier.wait()
         if self.rank == 0:
             self._plot(step)
 

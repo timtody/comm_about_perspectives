@@ -93,7 +93,6 @@ class Experiment(BaseExperiment):
 
             if i % cfg.logfreq == cfg.logfreq - 1:
                 self.log(i, agents_and_base)
-
                 self.writer._write()
         self.writer.close()
 
