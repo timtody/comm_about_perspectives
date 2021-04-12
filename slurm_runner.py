@@ -31,4 +31,4 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
     )
     subprocess.run(["echo", sbatch_file, ">", "tmp"])
     subprocess.run(["sbatch", "tmp"])
-    subprocess.run(["rm", "tmp"])
+    # subprocess.run(["rm", "tmp"])
