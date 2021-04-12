@@ -1,17 +1,19 @@
 from argparse import ArgumentParser
 from typing import NamedTuple
+
+from numpy import isin
 from functions import merge_cfg_with_cli
 import subprocess
 
 
 def unpack_args(**kwargs):
-    # TODO: make this right, --bool flags don't work correctly
-    return "".join(
-        map(
-            lambda kv: f"--{kv[0]} {kv[1] if not isinstance(kv[1], bool) else ''} ",
-            kwargs.items(),
-        )
-    )
+    flags = ""
+    for key, value in kwargs.items():
+        if isinstance(value, bool):
+            flags += f"--{key} " if value else ""
+        else:
+            flags += f"--{key} {value} "
+    return flags
 
 
 def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
@@ -23,8 +25,8 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
         f"#SBATCH -C v100-{runner_args.gb}g\n"
         f"#(use '-C v100-32g' for 32 GB GPUs only)\n"
         f"#SBATCH -A imi@{runner_args.gpu_or_cpu}\n"
-        f"#SBATCH --output=out/%j\n"
-        f"#SBATCH --error=err/%j\n"
+        f"#SBATCH --output={path}/{rank}out\n"
+        f"#SBATCH --error={path}/{rank}err\n"
         f"#SBATCH --time={runner_args.time}\n"
         f"#SBATCH --nodes={runner_args.nnodes}\n"
         f"#SBATCH --ntasks={runner_args.ntasks}\n"
