@@ -1,3 +1,4 @@
+import os
 from functions import merge_cfg_with_cli
 from main import Experiment, Config
 from chunked_writer import MultiProcessingWriter, TidyReader
@@ -12,7 +13,8 @@ args = parser.parse_args()
 
 writer = MultiProcessingWriter(args.path, rank=args.rank)
 reader = TidyReader(args.path)
-exp = Experiment(cfg, args.rank, writer, reader, args.path)
+print(os.getcwd())
 print(args)
 print(vars(args))
+exp = Experiment(cfg, args.rank, writer, reader, args.path)
 exp.run(args)
