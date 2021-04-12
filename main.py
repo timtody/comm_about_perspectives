@@ -119,7 +119,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     tracking_vars = "sigma", "eta_lsa", "eta_ae"
-    args.tracking_vars = tracking_vars
     sweep_root_path = generate_sweep_path(Experiment)
 
     processes = []
@@ -131,7 +130,7 @@ if __name__ == "__main__":
         args.eta_lsa = round(eta, 2)
         args.eta_ae = round(1 - eta, 2)
 
-        path: str = generate_run_path(sweep_root_path, args, args.tracking_vars)
+        path: str = generate_run_path(sweep_root_path, args, tracking_vars)
         print("Starting experiment on path", path)
         if args.mp_method == "mp":
             procs = run_single_from_sweep_mp(Experiment, args, path)
