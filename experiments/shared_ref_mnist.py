@@ -183,31 +183,30 @@ class Experiment(BaseExperiment):
         # TODO: add step as kwarg to add and add_multiple
         self.writer.add_multiple(
             [
-                (step, ae_loss_a.item(), "AE", agent_a.name, agent_b.name),
-                (step, lsa_loss_a.item(), "LSA", agent_a.name, agent_b.name),
-                (step, msa_loss_a.item(), "MSA", agent_a.name, agent_b.name),
-                (step, dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
-                (step, mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
+                (ae_loss_a.item(), "AE", agent_a.name, agent_b.name),
+                (lsa_loss_a.item(), "LSA", agent_a.name, agent_b.name),
+                (msa_loss_a.item(), "MSA", agent_a.name, agent_b.name),
+                (dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
+                (mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
                 (
-                    step,
                     lsa_loss_a.item() / mbvar_a.item(),
                     "LSA-MBVAR",
                     agent_a.name,
                     agent_b.name,
                 ),
-                (step, ae_loss_b.item(), "AE", agent_b.name, agent_a.name),
-                (step, lsa_loss_b.item(), "LSA", agent_b.name, agent_a.name),
-                (step, msa_loss_b.item(), "MSA", agent_b.name, agent_a.name),
-                (step, dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
-                (step, mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
+                (ae_loss_b.item(), "AE", agent_b.name, agent_a.name),
+                (lsa_loss_b.item(), "LSA", agent_b.name, agent_a.name),
+                (msa_loss_b.item(), "MSA", agent_b.name, agent_a.name),
+                (dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
+                (mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
                 (
-                    step,
                     lsa_loss_b.item() / mbvar_b.item(),
                     "LSA-MBVAR",
                     agent_b.name,
                     agent_a.name,
                 ),
             ],
+            step=step,
             tag="loss",
         )
 

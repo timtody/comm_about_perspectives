@@ -1,8 +1,4 @@
-from argparse import ArgumentParser
-from typing import NamedTuple
-
-from numpy import isin
-from functions import merge_cfg_with_cli
+import os
 import subprocess
 
 
@@ -19,6 +15,8 @@ def unpack_args(**kwargs):
 def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
     # TODO: make experiment configurable from command line s.t. we can pass it on
     # as an argument here
+    if not os.path.exists(path):
+        os.makedirs(path)
     sbatch_file = (
         f"#!/bin/bash\n"
         f"#SBATCH --job-name={jobname}\n"
