@@ -71,7 +71,7 @@ def generate_exp_path(exp, args, tracking_vars):
     path_root = os.path.join("results", "sweeps", name_and_datetime)
     tracking = ""
     for varname in tracking_vars:
-        tracking += f"{varname}:{args.__getattribute__(varname)}_"
+        tracking += f"{varname}:{args.__getattribute__(varname)}-"
     path = os.path.join(path_root, tracking)
     return path
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
             processes += procs
         elif args.mp_method == "slurm":
             for rank in range(args.nprocs):
-                jobname = generate_tracking_tag(tracking_vars) + "_" + str(rank)
+                jobname = generate_tracking_tag(tracking_vars) + "-" + str(rank)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
         else:
             raise InvalidConfigurationException("Invalid mp method name.")
