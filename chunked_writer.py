@@ -62,7 +62,7 @@ class TidyWriter:
         self._init_queue()
         self.blob_name = self._gen_blob_name()
 
-    def add(self, data: tuple, tag: str = "default") -> None:
+    def add(self, data: tuple, step: int = 0, tag: str = "default") -> None:
         """Adds data to the summary and then checks if the queue length
         is exceeded. If it is exceeded, calls the write function.
 
@@ -75,15 +75,16 @@ class TidyWriter:
             Note how all the metadata can be inferred from the actual data tuple. This property
             allows the asynchronous and unstructured collection of data.
         """
+        data = (step, *data)
         if self.global_param is not None:
             data = (self.global_param, *data)
         self.queue[tag].append(data)
         if len(self.queue) >= self.max_queue_len:
             self._write()
 
-    def add_multiple(self, data: List[Tuple], tag: AnyStr):
+    def add_multiple(self, data: List[Tuple], step: int, tag: AnyStr):
         for d in data:
-            self.add(d, tag)
+            self.add(d, step, tag)
 
     def close(self) -> None:
         """Closes the writer by writing the remaining data to disk."""
