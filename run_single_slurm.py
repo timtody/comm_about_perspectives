@@ -1,8 +1,6 @@
 from functions import merge_cfg_with_cli
 from main import Experiment, Config
-from slurm_runner import RunnerCfg
 from chunked_writer import MultiProcessingWriter, TidyReader
-from multiprocessing import Barrier
 from argparse import ArgumentParser
 
 cfg: Config = Config()
