@@ -29,4 +29,4 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
         f"set -x\n"
         f"srun python run_single_slurm.py --rank {rank} --path {path} {unpack_args(**vars(cfg))}\n"
     )
-    subprocess.run(["echo", sbatch_file])
+    subprocess.run(["sbatch", sbatch_file])
