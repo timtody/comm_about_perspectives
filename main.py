@@ -90,7 +90,7 @@ def generate_sweep_path(experiment):
 def generate_tracking_tag(tracking_vars):
     tracking_tag = ""
     for varname in tracking_vars:
-        tracking_tag += f"{varname}:{args.__getattribute__(varname)}_"
+        tracking_tag += f"{varname}:{args.__getattribute__(varname)}-"
     return tracking_tag
 
 
