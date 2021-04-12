@@ -11,6 +11,6 @@ merge_cfg_with_cli(cfg, parser)
 args = parser.parse_args()
 
 writer = MultiProcessingWriter(args.path, rank=args.rank)
-reader = TidyReader(cfg.path)
+reader = TidyReader(args.path)
 exp = Experiment(cfg, args.rank, writer, reader, args.path)
 exp.run()
