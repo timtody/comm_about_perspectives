@@ -1,5 +1,6 @@
 import itertools
 import os
+import string
 import random
 from typing import AnyStr, List, NamedTuple, Tuple
 
@@ -18,6 +19,8 @@ from torch.utils.tensorboard import SummaryWriter
 from experiments.experiment import BaseExperiment
 
 # TODO: add the sweep parameters to the writers
+
+# TODO: #IMPORTANT!!:  -> Scale losses correctly
 
 
 class Experiment(BaseExperiment):
@@ -62,8 +65,10 @@ class Experiment(BaseExperiment):
         self.tb = SummaryWriter(tb_path)
 
         base = self.generate_autoencoder("baseline")
-        # TODO: change ABCDEFG to something more general, this would fail with more than 7 agents
-        agents = [self.generate_autoencoder(f"{i}") for i in "ABCDEFG"[: cfg.nagents]]
+        agents = [
+            self.generate_autoencoder(f"{i}")
+            for i in string.ascii_uppercase[: cfg.nagents]
+        ]
         agents_and_base = [base] + agents
 
         agent_index_pairs = list(itertools.combinations(range(len(agents)), r=2))
@@ -209,7 +214,12 @@ class Experiment(BaseExperiment):
     def control_step(self, step: int, agent: AutoEncoder):
         digit = random.choice(range(10))
         batch = self.dataset.sample_digit(digit, bsize=self.cfg.bsize).to(self.dev)
-        loss = F.mse_loss(agent(batch), batch)
+        loss = F.mse_loss(agent(batch), batch) * (
+            self.cfg.eta_ae
+            + 0.5 * self.cfg.eta_lsa
+            + 0.5 * self.cfg.eta_dsa
+            + 0.5 * self.cfg.eta_msa
+        )
         agent.opt.zero_grad()
         loss.backward()
         agent.opt.step()

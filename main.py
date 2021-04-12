@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+from argparse import ArgumentParser
 from typing import NamedTuple
 
 import numpy as np
@@ -8,24 +9,30 @@ from experiments.shared_ref_mnist import Experiment
 from functions import (
     create_exp_name_and_datetime_path,
     merge_cfg_with_cli,
-    run,
-    run_single_from_sweep,
+    run_single_from_sweep_mp,
 )
+from slurm_runner import run_single_from_sweep_slurm
+
 
 # TODO: make this config modular!
 class Config(NamedTuple):
     # experiement params
     seed: int = 123
     nprocs: int = 1
-    gpu: bool = True
+    nogpu: bool = False
     logfreq: int = 1000
     nsteps: int = 50001
     nagents: int = 3
     ngpus: int = 4
+    mp_method: str = "mp"
+    # for future specifying exp from clargs
+    experiment: str = ""
 
     # hypsearch
     grid_size: int = 2
     nsamples: int = 10
+    # for future specifying tracking vars from clargs
+    tracking_vars: tuple = ()
 
     # nets
     latent_dim: int = 30
@@ -48,6 +55,17 @@ class Config(NamedTuple):
     # assessment of abstraction
     nsteps_pred_latent: int = 2000
     bsize_pred_latent: int = 128
+
+
+class RunnerCfg(NamedTuple):
+    jobname: str = "job"
+    gpu_or_cpu: str = "gpu"
+    gb: int = 16  # 16 or 32
+    nnodes: int = 1
+    ntasks: int = 1
+    time: str = "20:00:00"
+    cpus_per_task: int = 2
+    nrpocs: int = 3
 
 
 def generate_exp_path(exp, args, tracking_vars):
@@ -82,16 +100,22 @@ def generate_run_path(root_path, args, tracking_vars):
     return path
 
 
+class InvalidConfigurationException(BaseException):
+    """Exception"""
+
+    pass
+
+
 if __name__ == "__main__":
-    # TODO: generate sbatch script on the fly probably
-    multiprocessing.freeze_support()
     multiprocessing.set_start_method("fork")
-    cfg = Config()
-    args = merge_cfg_with_cli(cfg)
+    cfg: Config = Config()
+    parser = ArgumentParser()
+    merge_cfg_with_cli(cfg, parser)
+    runner_args = RunnerCfg()
+    args = parser.parse_args()
 
     tracking_vars = "sigma", "eta_lsa", "eta_ae"
     args.tracking_vars = tracking_vars
-
     sweep_root_path = generate_sweep_path(Experiment)
 
     processes = []
@@ -105,10 +129,17 @@ if __name__ == "__main__":
 
         path: str = generate_run_path(sweep_root_path, args, args.tracking_vars)
         print("Starting experiment on path", path)
-        procs = run_single_from_sweep(Experiment, args, path)
-        processes += procs
+        if args.mp_method == "mp":
+            procs = run_single_from_sweep_mp(Experiment, args, path)
+            processes += procs
+        elif args.mp_method == "slurm":
+            for rank in range(args.nprocs):
+                run_single_from_sweep_slurm(args, runner_args, path, rank)
+        else:
+            raise InvalidConfigurationException("Invalid mp method name.")
 
-    for proc in processes:
-        proc.start()
-    for proc in processes:
-        proc.join()
+    if args.mp_method == "mp":
+        for proc in processes:
+            proc.start()
+        for proc in processes:
+            proc.join()

@@ -33,7 +33,7 @@ class BaseExperiment(ABC):
         writer: MultiProcessingWriter,
         reader: TidyReader,
         path: str,
-        barrier: Barrier,
+        barrier: Barrier = None,
         handin: Dict = {},
     ) -> None:
         self.cfg = cfg
@@ -41,7 +41,7 @@ class BaseExperiment(ABC):
         self.rank = rank
         self.path = path
         self._set_seeds()
-        self.dev: torch.Device = get_device(self.cfg.gpu, rank, cfg.ngpus)
+        self.dev: torch.Device = get_device(not self.cfg.nogpu, rank, cfg.ngpus)
         self.writer = writer
         self.reader = reader
         self.handin = handin

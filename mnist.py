@@ -48,7 +48,7 @@ class MNISTDataset:
 
         dct = defaultdict(list)
         # TODO: CAREFUL! test dataset is absolutely WRONG because it gets zipped
-        # with the training dat (DUH!?)
+        # with the training data (DUH!?)
         for (_, label), im in zip(dataset, self._train if train else self._test):
             dct[label].append(im.data)
             if train:
