@@ -139,8 +139,7 @@ if __name__ == "__main__":
         elif args.mp_method == "slurm":
             for rank in range(args.nprocs):
                 jobname = generate_tracking_tag(tracking_vars) + "_" + str(rank)
-                runner_args.jobname = jobname
-                run_single_from_sweep_slurm(args, runner_args, path, rank)
+                run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
         else:
             raise InvalidConfigurationException("Invalid mp method name.")
 

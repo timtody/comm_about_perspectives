@@ -8,12 +8,12 @@ def unpack_args(**kwargs):
     return "".join(map(lambda kv: f"--{kv[0]} {kv[1]} ", kwargs.items()))
 
 
-def run_single_from_sweep_slurm(cfg, runner_args, path, rank):
+def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
     # TODO: make experiment configurable from command line s.t. we can pass it on
     # as an argument here
     sbatch_file = (
         f"#!/bin/bash\n"
-        f"#SBATCH --job-name={runner_args.jobname}\n"
+        f"#SBATCH --job-name={jobname}\n"
         f"#SBATCH -C v100-{runner_args.gb}g\n"
         f"#(use '-C v100-32g' for 32 GB GPUs only)\n"
         f"#SBATCH -A imi@{runner_args.gpu_or_cpu}\n"
