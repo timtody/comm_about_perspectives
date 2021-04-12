@@ -100,9 +100,9 @@ class MultiProcessingWriter(TidyWriter):
         super().__init__(path=path, max_queue_len=max_queue_len)
         self.rank = rank
 
-    def add(self, data: tuple, tag: str = "default") -> None:
+    def add(self, data: tuple, step: int, tag: str = "default") -> None:
         data = (self.rank, *data)
-        super().add(data, tag=tag)
+        super().add(data, step, tag=tag)
 
     def __repr__(self) -> str:
         return super().__repr__() + f" on rank {self.rank}"
