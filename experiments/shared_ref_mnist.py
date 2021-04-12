@@ -222,7 +222,7 @@ class Experiment(BaseExperiment):
         agent.opt.zero_grad()
         loss.backward()
         agent.opt.step()
-        self.writer.add((step, loss.item(), "AE", agent.name, ""), tag="loss")
+        self.writer.add((loss.item(), "AE", agent.name, ""), step=step, tag="loss")
 
     def predict_from_latent_and_reconstruction(
         self, agents: List[AutoEncoder], step: int
@@ -254,11 +254,12 @@ class Experiment(BaseExperiment):
 
                 self.writer.add_multiple(
                     [
-                        (step, i, loss_latent, "Loss", "Latent", agent.name),
-                        (step, i, acc_latent, "Accuracy", "Latent", agent.name),
-                        (step, i, loss_rec, "Loss", "Reconstruction", agent.name),
-                        (step, i, acc_rec, "Accuracy", "Reconstruction", agent.name),
+                        (i, loss_latent, "Loss", "Latent", agent.name),
+                        (i, acc_latent, "Accuracy", "Latent", agent.name),
+                        (i, loss_rec, "Loss", "Reconstruction", agent.name),
+                        (i, acc_rec, "Accuracy", "Reconstruction", agent.name),
                     ],
+                    step=step,
                     tag="pred_from_latent",
                 )
 
