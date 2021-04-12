@@ -119,6 +119,9 @@ if __name__ == "__main__":
     tracking_vars = "sigma", "eta_lsa", "eta_ae"
     sweep_root_path = generate_sweep_path(Experiment)
 
+    if args.mp_method == "slurm":
+        sweep_root_path = os.path.join("$SCRATCH", sweep_root_path)
+
     processes = []
     for _ in range(args.nsamples):
         eta = np.random.rand()
