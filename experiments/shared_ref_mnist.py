@@ -154,18 +154,6 @@ class Experiment(BaseExperiment):
         ab_name = agent_a.name + agent_b.name
         ba_name = agent_b.name + agent_a.name
 
-        self.tb.add_scalar(f"AEloss{ab_name}", ae_loss_a, step)
-        self.tb.add_scalar(f"AEloss{ba_name}", ae_loss_b, step)
-
-        self.tb.add_scalar(f"mbvar{ab_name}", mbvar_a, step)
-        self.tb.add_scalar(f"mbvar{ba_name}", mbvar_b, step)
-
-        self.tb.add_scalar(f"lsa{ab_name}", lsa_loss_a, step)
-        self.tb.add_scalar(f"lsa{ba_name}", lsa_loss_b, step)
-
-        self.tb.add_scalar(f"lsa-mbvar{ab_name}", lsa_loss_a / mbvar_a, step)
-        self.tb.add_scalar(f"lsa-mbvar{ba_name}", lsa_loss_b / mbvar_b, step)
-
         total_loss_a: Tensor = (
             self.cfg.eta_ae * ae_loss_a
             + self.cfg.eta_lsa * lsa_loss_a
@@ -186,35 +174,48 @@ class Experiment(BaseExperiment):
         agent_a.opt.step()
         agent_b.opt.step()
 
-        # TODO: add step as kwarg to add and add_multiple
-        self.writer.add_multiple(
-            [
-                (ae_loss_a.item(), "AE", agent_a.name, agent_b.name),
-                (lsa_loss_a.item(), "LSA", agent_a.name, agent_b.name),
-                (msa_loss_a.item(), "MSA", agent_a.name, agent_b.name),
-                (dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
-                (mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
-                (
-                    lsa_loss_a.item() / mbvar_a.item(),
-                    "LSA-MBVAR",
-                    agent_a.name,
-                    agent_b.name,
-                ),
-                (ae_loss_b.item(), "AE", agent_b.name, agent_a.name),
-                (lsa_loss_b.item(), "LSA", agent_b.name, agent_a.name),
-                (msa_loss_b.item(), "MSA", agent_b.name, agent_a.name),
-                (dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
-                (mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
-                (
-                    lsa_loss_b.item() / mbvar_b.item(),
-                    "LSA-MBVAR",
-                    agent_b.name,
-                    agent_a.name,
-                ),
-            ],
-            step=step,
-            tag="loss",
-        )
+        if step % 50 == 0:
+
+            self.tb.add_scalar(f"AEloss{ab_name}", ae_loss_a, step)
+            self.tb.add_scalar(f"AEloss{ba_name}", ae_loss_b, step)
+
+            self.tb.add_scalar(f"mbvar{ab_name}", mbvar_a, step)
+            self.tb.add_scalar(f"mbvar{ba_name}", mbvar_b, step)
+
+            self.tb.add_scalar(f"lsa{ab_name}", lsa_loss_a, step)
+            self.tb.add_scalar(f"lsa{ba_name}", lsa_loss_b, step)
+
+            self.tb.add_scalar(f"lsa-mbvar{ab_name}", lsa_loss_a / mbvar_a, step)
+            self.tb.add_scalar(f"lsa-mbvar{ba_name}", lsa_loss_b / mbvar_b, step)
+
+            self.writer.add_multiple(
+                [
+                    (ae_loss_a.item(), "AE", agent_a.name, agent_b.name),
+                    (lsa_loss_a.item(), "LSA", agent_a.name, agent_b.name),
+                    (msa_loss_a.item(), "MSA", agent_a.name, agent_b.name),
+                    (dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
+                    (mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
+                    (
+                        lsa_loss_a.item() / mbvar_a.item(),
+                        "LSA-MBVAR",
+                        agent_a.name,
+                        agent_b.name,
+                    ),
+                    (ae_loss_b.item(), "AE", agent_b.name, agent_a.name),
+                    (lsa_loss_b.item(), "LSA", agent_b.name, agent_a.name),
+                    (msa_loss_b.item(), "MSA", agent_b.name, agent_a.name),
+                    (dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
+                    (mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
+                    (
+                        lsa_loss_b.item() / mbvar_b.item(),
+                        "LSA-MBVAR",
+                        agent_b.name,
+                        agent_a.name,
+                    ),
+                ],
+                step=step,
+                tag="loss",
+            )
 
     def control_step(self, step: int, agent: AutoEncoder):
         digit = random.choice(range(10))
@@ -228,7 +229,9 @@ class Experiment(BaseExperiment):
         agent.opt.zero_grad()
         loss.backward()
         agent.opt.step()
-        self.writer.add((loss.item(), "AE", agent.name, ""), step=step, tag="loss")
+        if step % 100 == 0:
+            self.tb.add_scalar("ae_loss_control", loss.item(), step)
+            self.writer.add((loss.item(), "AE", agent.name, ""), step=step, tag="loss")
 
     def predict_from_latent_and_reconstruction(
         self, agents: List[AutoEncoder], step: int
@@ -251,23 +254,24 @@ class Experiment(BaseExperiment):
                 loss_rec = mlp_rec.train(reconstruction, labels)
                 acc_rec = mlp_rec.compute_acc(reconstruction, labels)
 
-                self.tb.add_scalar(
-                    f"acc_from_latent_{agent.name}_epoch_{step}", acc_latent, i
-                )
-                self.tb.add_scalar(
-                    f"acc_from_rec_{agent.name}_epoch_{step}", acc_rec, i
-                )
+                if i % 50 == 0:
+                    self.tb.add_scalar(
+                        f"acc_from_latent_{agent.name}_epoch_{step}", acc_latent, i
+                    )
+                    self.tb.add_scalar(
+                        f"acc_from_rec_{agent.name}_epoch_{step}", acc_rec, i
+                    )
 
-                self.writer.add_multiple(
-                    [
-                        (i, loss_latent, "Loss", "Latent", agent.name),
-                        (i, acc_latent, "Accuracy", "Latent", agent.name),
-                        (i, loss_rec, "Loss", "Reconstruction", agent.name),
-                        (i, acc_rec, "Accuracy", "Reconstruction", agent.name),
-                    ],
-                    step=step,
-                    tag="pred_from_latent",
-                )
+                    self.writer.add_multiple(
+                        [
+                            (i, loss_latent, "Loss", "Latent", agent.name),
+                            (i, acc_latent, "Accuracy", "Latent", agent.name),
+                            (i, loss_rec, "Loss", "Reconstruction", agent.name),
+                            (i, acc_rec, "Accuracy", "Reconstruction", agent.name),
+                        ],
+                        step=step,
+                        tag="pred_from_latent",
+                    )
 
 
 def filter_df(

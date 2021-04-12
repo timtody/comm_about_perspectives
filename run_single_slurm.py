@@ -12,7 +12,7 @@ merge_cfg_with_cli(cfg, parser)
 args = parser.parse_args()
 data_path = os.path.join(args.path, "data")
 if not os.path.exists(data_path):
-    os.makedirs(data_path)
+    os.makedirs(data_path, exist_ok=True)
 writer = MultiProcessingWriter(data_path, rank=args.rank)
 reader = TidyReader(data_path)
 exp = Experiment(args, args.rank, writer, reader, args.path)
