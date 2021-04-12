@@ -115,6 +115,8 @@ if __name__ == "__main__":
     merge_cfg_with_cli(cfg, parser)
     runner_args = RunnerCfg()
     args = parser.parse_args()
+    print(vars(args))
+    exit(1)
 
     tracking_vars = "sigma", "eta_lsa", "eta_ae"
     sweep_root_path = generate_sweep_path(Experiment)
