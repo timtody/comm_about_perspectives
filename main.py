@@ -23,7 +23,7 @@ class Config(NamedTuple):
     logfreq: int = 1000
     nsteps: int = 50001
     nagents: int = 3
-    ngpus: int = 4
+    ngpus: int = 1
     mp_method: str = "mp"
     # for future specifying exp from clargs
     experiment: str = ""
