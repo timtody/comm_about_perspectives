@@ -31,8 +31,6 @@ class Config(NamedTuple):
     # hypsearch
     grid_size: int = 2
     nsamples: int = 10
-    # for future specifying tracking vars from clargs
-    tracking_vars: tuple = ()
 
     # nets
     latent_dim: int = 30
