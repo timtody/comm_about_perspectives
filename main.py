@@ -26,7 +26,7 @@ class Config(NamedTuple):
     ngpus: int = 1
     mp_method: str = "mp"
     # for future specifying exp from clargs
-    experiment: str = ""
+    # experiment: str = ""
 
     # hypsearch
     grid_size: int = 2
