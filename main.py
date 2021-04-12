@@ -89,14 +89,18 @@ def generate_sweep_path(experiment):
     return os.path.join("results", "sweeps", exp_path)
 
 
+def generate_tracking_tag(tracking_vars):
+    tracking_tag = ""
+    for varname in tracking_vars:
+        tracking_tag += f"{varname}:{args.__getattribute__(varname)}_"
+    return tracking_tag
+
+
 def generate_run_path(root_path, args, tracking_vars):
     """Generates the path for the individual run. Will be inferred
     from tracking_vars and root_path. The result will be passed to the experiment.
     """
-    tracking = ""
-    for varname in tracking_vars:
-        tracking += f"{varname}:{args.__getattribute__(varname)}_"
-    path = os.path.join(root_path, tracking)
+    path = os.path.join(root_path, generate_tracking_tag(tracking_vars))
     return path
 
 
@@ -134,6 +138,8 @@ if __name__ == "__main__":
             processes += procs
         elif args.mp_method == "slurm":
             for rank in range(args.nprocs):
+                jobname = generate_tracking_tag(tracking_vars) + "_" + str(rank)
+                runner_args.jobname = jobname
                 run_single_from_sweep_slurm(args, runner_args, path, rank)
         else:
             raise InvalidConfigurationException("Invalid mp method name.")
