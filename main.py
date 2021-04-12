@@ -120,7 +120,7 @@ if __name__ == "__main__":
     sweep_root_path = generate_sweep_path(Experiment)
 
     if args.mp_method == "slurm":
-        sweep_root_path = os.path.join("$SCRATCH", sweep_root_path)
+        sweep_root_path = os.path.join(os.path.expandvars("$SCRATCH"), sweep_root_path)
 
     processes = []
     for _ in range(args.nsamples):
