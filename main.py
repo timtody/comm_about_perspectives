@@ -130,7 +130,7 @@ if __name__ == "__main__":
     for _ in range(args.nsamples):
         args.sigma = round(np.random.rand(), 3)
         args.eta_lsa = round(np.random.rand(), 3)
-        # args.eta_ae = round(np.random.rand(), 3)
+        args.eta_ae = 1 - args.eta_lsa  # round(np.random.rand(), 3)
         # args.eta_dsa = round(np.random.rand(), 3)
         # args.eta_msa = round(np.random.rand(), 3)
 
