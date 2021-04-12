@@ -5,6 +5,7 @@ import subprocess
 
 
 def unpack_args(**kwargs):
+    # TODO: make this right, --bool flags don't work correctly
     return "".join(
         map(
             lambda kv: f"--{kv[0]} {kv[1] if not isinstance(kv[1], bool) else ''} ",
@@ -36,5 +37,5 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
     )
     with open("tmp", "w") as f:
         f.writelines(sbatch_file)
-    subprocess.run(["sbatch", "tmp"])
+    subprocess.run(["sbatch", "tmp", "&"])
     subprocess.run(["rm", "tmp"])
