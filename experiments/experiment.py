@@ -52,6 +52,9 @@ class BaseExperiment(ABC):
 
     def _dump_cfg(self, cfg):
         print(os.getcwd())
+        print(cfg)
+        print(type(cfg))
+        print(vars(cfg))
         with open(os.path.join(self.path, "cfg.json"), "w") as f:
             json.dump(vars(cfg), f)
 
