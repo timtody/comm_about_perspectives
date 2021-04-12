@@ -58,6 +58,11 @@ class Experiment(BaseExperiment):
         # df_prediction.to_csv("res_prediction.csv")
         # plot_prediction_errors(df_prediction, step)
 
+    def log(self, step: int, agents):
+        self.predict_from_latent_and_reconstruction(agents, step)
+        self.save_params(step, agents)
+        return super().log(step=step)
+
     def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
 
@@ -87,8 +92,9 @@ class Experiment(BaseExperiment):
                     self.control_step(i, base)
 
             if i % cfg.logfreq == cfg.logfreq - 1:
-                self.predict_from_latent_and_reconstruction(agents_and_base, i)
-                self.save_params(i, agents_and_base)
+                self.log(i, agents_and_base)
+
+                self.writer._write()
         self.writer.close()
 
     def save_params(self, step: int, agents: List[AutoEncoder]):
