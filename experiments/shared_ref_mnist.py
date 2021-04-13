@@ -209,7 +209,12 @@ class Experiment(BaseExperiment):
     def control_step(self, step: int, agent: AutoEncoder):
         digit = random.choice(range(10))
         batch = self.dataset.sample_digit(digit, bsize=self.cfg.bsize).to(self.dev)
-        loss = F.mse_loss(agent(batch), batch) * (
+
+        latent = agent.encode(batch)
+        latent += torch.randn_like(latent) * self.cfg.sigma
+        rec = agent.decode(latent)
+
+        loss = F.mse_loss(rec, batch) * (
             self.cfg.eta_ae
             + 0.5 * self.cfg.eta_lsa
             + 0.5 * self.cfg.eta_dsa
