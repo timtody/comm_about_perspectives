@@ -50,6 +50,10 @@ def stem_to_params(stem) -> dict:
     return params
 
 
+def plot_pcoords(df, labels):
+    print(df, labels)
+
+
 def series_to_mean(df):
     groups = df.groupby(["Rank", "Metric", "Type", "Agent", "Epoch"], as_index=False)
     return groups.apply(lambda x: x[x["Step"] >= 4000].mean())
@@ -106,7 +110,7 @@ def load_data_raw(path):
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
-        if i == -1:
+        if i == 1:
             break
     return pd.concat(dfs)
 
@@ -204,6 +208,8 @@ def compute_plots_latent(df, hparams):
 
 def make_plots(path: Str, hparams: List):
     df = load_data_raw(path)
+    plot_pcoords(df, hparams)
+    exit(1)
 
     compute_plots_latent(df, hparams)
     compute_plots_rec(df, hparams)
