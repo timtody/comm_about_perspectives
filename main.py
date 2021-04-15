@@ -115,33 +115,31 @@ if __name__ == "__main__":
     merge_cfg_with_cli(cfg, parser)
     runner_args = RunnerCfg()
     args = parser.parse_args()
+    
+    hparams = ["sigma", "eta_lsa", "eta_msa", "eta_dsa", "eta_msa"]
 
-    tracking_vars = (
-        "sigma",
-        "eta_lsa",
-        "eta_ae",
-    )  # "eta_dsa", "eta_msa"
     sweep_root_path = generate_sweep_path(Experiment)
 
     if args.mp_method == "slurm":
         sweep_root_path = os.path.join(os.path.expandvars("$SCRATCH"), sweep_root_path)
 
     processes = []
-    for _ in range(args.nsamples):
-        args.sigma = round(np.random.rand(), 3)
-        args.eta_lsa = round(np.random.rand(), 3)
-        args.eta_ae = round(1 - args.eta_lsa, 3)  # round(np.random.rand(), 3)
-        # args.eta_dsa = round(np.random.rand(), 3)
-        # args.eta_msa = round(np.random.rand(), 3)
-
-        path: str = generate_run_path(sweep_root_path, args, tracking_vars)
+    for i in range(args.nsamples + 4):
+        if i <= 3:
+            for param in hparams:
+                args.__setattr__(param, 1 if hparams.index(param) == i else 0)
+        else:
+            for param in hparams:
+                args.__setattr__(param, round(np.random.rand(), 3))
+    
+        path: str = generate_run_path(sweep_root_path, args, hparams)
         print("Starting experiment on path", path)
         if args.mp_method == "mp":
             procs = run_single_from_sweep_mp(Experiment, args, path)
             processes += procs
         elif args.mp_method == "slurm":
             for rank in range(args.nprocs):
-                jobname = generate_tracking_tag(tracking_vars) + "-" + str(rank)
+                jobname = generate_tracking_tag(hparams) + "-" + str(rank)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
         else:
             raise InvalidConfigurationException("Invalid mp method name.")

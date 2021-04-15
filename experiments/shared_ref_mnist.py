@@ -20,8 +20,6 @@ from experiments.experiment import BaseExperiment
 
 # TODO: add the sweep parameters to the writers
 
-# TODO: #IMPORTANT!!:  -> Scale losses correctly
-
 
 class Experiment(BaseExperiment):
     @staticmethod
@@ -230,7 +228,6 @@ class Experiment(BaseExperiment):
     def predict_from_latent_and_reconstruction(
         self, agents: List[AutoEncoder], step: int
     ) -> None:
-        # TODO: Implement n-best metric
         for agent in agents:
             mlp: MLP = MLP(self.cfg.latent_dim).to(self.dev)
             mlp_rec: CNN = CNN().to(self.dev)
@@ -281,58 +278,6 @@ def filter_df(
         nsteps = len(list(df.groupby(group_keys).groups.values())[0])
         df = df.groupby(group_keys).apply(lambda x: x[:: nsteps // datapoints])
     return df
-
-
-def plot_prediction_errors(df: DataFrame, step: int):
-    sns.relplot(
-        data=df[df["Epoch"] == step],
-        x="Step",
-        y="Value",
-        col="Type",
-        row="Metric",
-        hue="Agent",
-        style="Agent",
-        markers=True,
-        dashes=False,
-        kind="line",
-        facet_kws=dict(sharey=False, margin_titles=True),
-    )
-    plt.savefig("pred.pdf")
-    plt.savefig("pred.svg")
-
-
-def plot_relplot(df: DataFrame, type: str):
-    sns.relplot(
-        data=df[df["Type"] == type],
-        x="Step",
-        y="Loss",
-        col="Agent_X",
-        row="Agent_Y",
-        style="Type",
-        hue="Type",
-        dashes=False,
-        markers=True,
-        kind="line",
-        row_order=["A", "B", "C"],
-        col_order=["A", "B", "C"],
-        facet_kws=dict(margin_titles=True),
-    )
-    plt.savefig(f"catplot_{type}.pdf")
-    plt.savefig(f"catplot_{type}.svg")
-
-
-def plot_lineplot(df: DataFrame, type: str):
-    sns.lineplot(
-        data=df[df["Type"] == type],
-        x="Step",
-        y="Loss",
-        style="Agent_X",
-        hue="Agent_X",
-        dashes=False,
-        markers=True,
-    )
-    plt.savefig(f"lineplot_{type}.pdf")
-    plt.savefig(f"lineplot_{type}.svg")
 
 
 class MLP(nn.Module):
@@ -387,7 +332,3 @@ class CNN(nn.Module):
         loss.backward()
         self.opt.step()
         return loss.item()
-
-
-if __name__ == "__main__":
-    ...

@@ -46,7 +46,6 @@ class BaseExperiment(ABC):
         self.reader = reader
         self.handin = handin
         self.barrier = barrier
-        print(self.rank, self.dev)
         if rank == 0:
             self._dump_cfg(cfg)
 
