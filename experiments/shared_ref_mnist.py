@@ -138,6 +138,9 @@ class Experiment(BaseExperiment):
             mbvar_a = msg_a.var(dim=0).mean()
             mbvar_b = msg_b.var(dim=0).mean()
 
+            # compute difference between the decodings. Should decrease if agents abstract
+            dec_diff_a = dec_diff_b = F.mse_loss(rec_aa - rec_bb)
+
         ab_name = agent_a.name + agent_b.name
         ba_name = agent_b.name + agent_a.name
 
@@ -199,6 +202,8 @@ class Experiment(BaseExperiment):
                         agent_b.name,
                         agent_a.name,
                     ),
+                    (dec_diff_a.item(), "DECDIFF", agent_a.name, agent_b.name),
+                    (dec_diff_b.item(), "DECDIFF", agent_b.name, agent_a.name),
                 ],
                 step=step,
                 tag="loss",
