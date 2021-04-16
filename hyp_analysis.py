@@ -8,6 +8,9 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.linear_model import LinearRegression
+from matplotlib import ticker
+import matplotlib.cm as cm
+
 
 from chunked_writer import TidyReader
 
@@ -51,7 +54,30 @@ def stem_to_params(stem) -> dict:
 
 
 def plot_pcoords(df, labels):
-    print(df, labels)
+    columns_to_drop = [col for col in df.columns if col not in labels]
+    df = df.drop(axis=1, labels=columns_to_drop)
+    _, axes = plt.subplots(ncols=len(labels) - 1, sharey=False, figsize=(15, 5))
+
+    for i, ax in enumerate(axes):
+        for ix in df.index:
+            ax.plot(
+                [0, 1],
+                df.loc[ix, labels[i] : labels[i + 1]].astype(float),
+                c=cm.Spectral(df.loc[ix, "Value"]),
+            )
+            ax.set_xlim((0, 1))
+            ax.set_ylim((-0.05, 1.05))
+            try:
+                label = labels[i].split("_")[1]
+            except:
+                label = labels[i]
+            ax.set_xticklabels(label)
+
+    ax = plt.twinx(axes[-1])
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels([labels[-2], labels[-1]])
+    plt.subplots_adjust(wspace=0)
+    plt.show()
 
 
 def series_to_mean(df):
@@ -75,6 +101,7 @@ def load_data(path, type="Reconstruction"):
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
+
     return pd.concat(dfs)
 
 
@@ -110,8 +137,6 @@ def load_data_raw(path):
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
-        if i == 1:
-            break
     return pd.concat(dfs)
 
 
@@ -207,8 +232,13 @@ def compute_plots_latent(df, hparams):
 
 
 def make_plots(path: Str, hparams: List):
-    df = load_data_raw(path)
-    plot_pcoords(df, hparams)
+
+    df = load_data(path)
+    df = df[df.Agent != "baseline"]
+    df = df[df.Epoch == 49999.0]
+
+    groups = df.groupby([*hparams], as_index=False).mean()
+    plot_pcoords(groups, ["eta_lsa", "eta_dsa", "eta_msa", "sigma", "Value"])
     exit(1)
 
     compute_plots_latent(df, hparams)
@@ -223,8 +253,8 @@ def make_plots(path: Str, hparams: List):
 
 if __name__ == "__main__":
     make_plots(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-12/21-04-14",
-        ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-15/18-09-16",
+        [ "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
     )
 
     # gt_than_base = get_best_params(

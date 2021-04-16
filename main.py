@@ -116,7 +116,7 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
     
-    hparams = ["sigma", "eta_lsa", "eta_msa", "eta_dsa", "eta_msa"]
+    hparams = ["sigma", "eta_lsa", "eta_msa", "eta_dsa", "eta_ae"]
 
     sweep_root_path = generate_sweep_path(Experiment)
 
