@@ -2,16 +2,13 @@ import itertools
 import os
 import string
 import random
-from typing import AnyStr, List, NamedTuple, Tuple
+from typing import AnyStr, List, NamedTuple
 
-import matplotlib.pyplot as plt
-import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from autoencoder import AutoEncoder
-from c_types import DataFrame, TidyReader
 from mnist import MNISTDataset
 from torch.tensor import Tensor
 from torch.utils.tensorboard import SummaryWriter
@@ -22,34 +19,10 @@ from experiments.experiment import BaseExperiment
 
 
 class Experiment(BaseExperiment):
-    @staticmethod
-    def load_data(reader: TidyReader) -> Tuple[DataFrame]:
-        df1 = filter_df(
-            reader.read("loss", ["Rank", "Step", "Loss", "Type", "Agent_X", "Agent_Y"]),
-            group_keys=["Rank", "Type", "Agent_X", "Agent_Y"],
-            sort=True,
-            datapoints=25,
-        )
-        df2 = filter_df(
-            reader.read(
-                "pred_from_latent",
-                ["Rank", "Epoch", "Step", "Value", "Metric", "Type", "Agent"],
-            ),
-            group_keys=["Rank", "Epoch", "Type", "Agent", "Metric"],
-            sort=True,
-            datapoints=25,
-        )
-        return (df1, df2)
-
-    @staticmethod
-    def plot(dataframes: Tuple[DataFrame], step: int) -> None:
-        pass
-
     def log(self, step: int, agents):
         self.predict_from_latent_and_reconstruction(agents, step)
         self.save_params(step, agents)
         self.writer._write()
-        # return super().log(step=step)
 
     def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
@@ -165,7 +138,6 @@ class Experiment(BaseExperiment):
         agent_b.opt.step()
 
         if step % 50 == 0:
-
             self.tb.add_scalar(f"AEloss{ab_name}", ae_loss_a, step)
             self.tb.add_scalar(f"AEloss{ba_name}", ae_loss_b, step)
 
@@ -268,21 +240,6 @@ class Experiment(BaseExperiment):
                         step=step,
                         tag="pred_from_latent",
                     )
-
-
-def filter_df(
-    df: DataFrame,
-    group_keys: List[AnyStr],
-    datapoints: int = 50,
-    sort: bool = False,
-    filter: bool = True,
-):
-    if sort:
-        df = df.sort_values(by=["Step"])
-    if filter:
-        nsteps = len(list(df.groupby(group_keys).groups.values())[0])
-        df = df.groupby(group_keys).apply(lambda x: x[:: nsteps // datapoints])
-    return df
 
 
 class MLP(nn.Module):
