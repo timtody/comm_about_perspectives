@@ -12,6 +12,9 @@ exp_filename = args.exp.split("/")[-1].split(".")[0]
 Experiment = import_experiment_class(exp_filename)
 
 reader_path = os.path.join(args.path, "data")
+plot_path = os.path.join(args.path, "plots")
+if not os.path.exists(plot_path):
+    os.makedirs(plot_path)
 reader = TidyReader(os.path.join(args.path, "data"))
 df = Experiment.load_data(reader)
-Experiment.plot(df)
+Experiment.plot(df, plot_path)

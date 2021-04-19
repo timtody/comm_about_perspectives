@@ -85,13 +85,7 @@ class Experiment(BaseExperiment):
         return all_agents
 
     @staticmethod
-    def plot(df) -> None:
-        print(df)
-
-    @staticmethod
-    def load_data(reader) -> Any:
-        df = reader.read(columns=["Agent", "Step", "Accuracy"])
-        df = df.groupby(["Agent"], as_index=False).apply(lambda x: x[::50])
+    def plot(df, plot_path) -> None:
         sns.lineplot(
             data=df,
             x="Step",
@@ -101,7 +95,14 @@ class Experiment(BaseExperiment):
             markers=True,
             hue="Agent",
         )
-        plt.show()
+        plt.savefig(plot_path + "/accuracy.pdf")
+        plt.savefig(plot_path + "/accuracy.svg")
+
+    @staticmethod
+    def load_data(reader) -> Any:
+        df = reader.read(columns=["Agent", "Step", "Accuracy"])
+        df = df.groupby(["Agent"], as_index=False).apply(lambda x: x[::125])
+        return df
 
 
 class MLP(nn.Module):
