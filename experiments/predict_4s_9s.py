@@ -32,7 +32,7 @@ class Experiment(BaseExperiment):
 
         mlps: List[MLP] = [MLP(30) for _ in all_agents]
         bsize = 512
-        nsteps = 100
+        nsteps = 1000
 
         digits = [4, 7, 9]
 
@@ -89,7 +89,7 @@ class Experiment(BaseExperiment):
     @staticmethod
     def load_data(reader) -> Any:
         df = reader.read(columns=["Agent", "Step", "Accuracy"])
-        df = df.groupby(["Agent"], as_index=False).apply(lambda x: x[::5])
+        df = df.groupby(["Agent"], as_index=False).apply(lambda x: x[::50])
         sns.lineplot(
             data=df,
             x="Step",
