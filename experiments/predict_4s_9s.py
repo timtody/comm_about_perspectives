@@ -23,6 +23,7 @@ class Config(NamedTuple):
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
+        print(self.dev)
         path = f"results/step_49999/rank_{self.rank}"
         dataset = MNISTDataset()
         all_agents: List[AutoEncoder] = self._load_aes(path)
