@@ -27,7 +27,7 @@ class Experiment(BaseExperiment):
     def run(self, cfg: Config):
         path = (
             f"results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-16/13-15-58/"
-            f"sigma:0-eta_lsa:0-eta_msa:1-eta_dsa:0-eta_ae:0-/params/step_49999/rank_{self.rank}"
+            f"sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-/params/step_49999/rank_{self.rank}"
         )
         dataset = MNISTDataset()
         all_agents: List[AutoEncoder] = self._load_aes(path)
