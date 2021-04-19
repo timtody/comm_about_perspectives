@@ -1,22 +1,21 @@
 import os
 import random
 import string
+from itertools import combinations
 from pathlib import Path
 from typing import AnyStr, List
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+from pandas.core.frame import DataFrame
 import seaborn as sns
 import torch
-import torch.nn.functional as F
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
-from numpy.random import random_sample
 from sklearn.linear_model import LinearRegression
 from sklearn.manifold import TSNE
-from sklearn.utils.validation import check_random_state
 
 from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
@@ -61,7 +60,7 @@ def stem_to_params(stem) -> dict:
     return params
 
 
-def plot_pcoords(df, labels, tag):
+def plot_pcoords(df, labels, tag, path_to_plot):
     columns_to_drop = [col for col in df.columns if col not in labels]
     df = df.drop(axis=1, labels=columns_to_drop)
     _, axes = plt.subplots(ncols=len(labels) - 1, sharey=False, figsize=(20, 8))
@@ -87,7 +86,7 @@ def plot_pcoords(df, labels, tag):
     ax.set_xlim((0, 1))
     ax.set_xticklabels([labels[-2], labels[-1]])
     plt.subplots_adjust(wspace=0)
-    plt.savefig(f"plots/pcoords_{tag}.pdf")
+    plt.savefig(f"plots/{path_to_plot}/pcoords_{tag}.pdf")
     plt.close()
 
 
@@ -151,22 +150,32 @@ def load_data_raw(path):
     return pd.concat(dfs)
 
 
-def compute_and_save_reg_coefs(df, hparams, tag):
+def compute_and_save_reg_coefs(df, hparams, tag, path_to_plot):
     # compute impact of hparams on prediction
 
     ## filter out baseline because most parameters have no influence on it
     ## only look at last epoch
     df = df[(df["Agent"] != "baseline") & (df["Epoch"] == 49999.0)]
     ## compute the mean across ranks and agents to arrive at 1 acc. value per set of hparams
-    groups = df.groupby(hparams, as_index=False).mean()
+    groups: DataFrame = df.groupby(hparams, as_index=False).mean()
+
+    # write to latex before regressing
+    # this contains a table of all parameters
+    with open(f"plots/{path_to_plot}/{tag}_table_view.txt", "w") as f:
+        f.writelines(
+            groups.drop(["Epoch", "Rank", "Step"], axis=1)
+            .sort_values(by="Value", ascending=False)
+            .to_latex()
+        )
+
     X, y = groups.loc[:, hparams], groups.loc[:, "Value"]
     coefs = compute_reg_coefs(X, y)
     columns = list(map(lambda x: f"beta_{x}", hparams))
     df_coefs = pd.DataFrame((coefs, coefs), columns=columns)
-    df_coefs.to_csv(f"plots/{'-'.join(hparams)}_params_{tag}.csv")
+    df_coefs.to_csv(f"plots/{path_to_plot}/{'-'.join(hparams)}_params_{tag}.csv")
 
 
-def compute_barplots(df, hparams, tag):
+def compute_barplots(df, hparams, tag, path_to_plot):
     df = get_best_params(df, 0.0, hparams)
     df = df[df["Epoch"] == 49999.0]
     param_col_name = ""
@@ -179,13 +188,13 @@ def compute_barplots(df, hparams, tag):
             data=df, kind="bar", col="params", x="Agent", y="Value", col_wrap=3
         )
         g.set_titles("{col_name}")
-        plt.savefig(f"plots/bar_{tag}.pdf")
+        plt.savefig(f"plots/{path_to_plot}/bar_{tag}.pdf")
     else:
         print("Arsch")
     plt.close()
 
 
-def compute_best_vs_base(df, hparams, tag):
+def compute_best_vs_base(df, hparams, tag, path_to_plot):
     df = get_best_params(df, 1.0, hparams)
     trans = df.groupby([*hparams, "Epoch"], as_index=False).apply(
         lambda x: x.assign(
@@ -202,62 +211,67 @@ def compute_best_vs_base(df, hparams, tag):
     plt.bar(["Best", "Mean"], [trans.max_diff.iloc[0], trans.max_diff.mean()])
     plt.annotate(str(round(trans.max_diff.iloc[0], 2)), (0, trans.max_diff.iloc[0]))
     plt.annotate(str(round(trans.max_diff.mean(), 2)), (1, trans.max_diff.mean()))
-    plt.savefig(f"plots/best_vs_base_{tag}.pdf")
+    plt.savefig(f"plots/{path_to_plot}/best_vs_base_{tag}.pdf")
     plt.close()
 
 
-def compute_plots_rec(df, hparams):
-    _make_plots(df, hparams, "Reconstruction")
+def compute_plots_rec(df, hparams, path_to_plot):
+    _make_plots(df, hparams, "Reconstruction", path_to_plot)
 
 
-def compute_plots_latent(df, hparams):
-    _make_plots(df, hparams, "Latent")
+def compute_plots_latent(df, hparams, path_to_plot):
+    _make_plots(df, hparams, "Latent", path_to_plot)
 
 
-def _make_plots(df, hparams, tag):
+def _make_plots(df, hparams, tag, path_to_plot):
     # latent
     df_lat = df[df["Type"] == tag]
     ## reg coefs
-    compute_and_save_reg_coefs(df_lat, hparams, tag)
+    compute_and_save_reg_coefs(df_lat, hparams, tag, path_to_plot)
     ## barplots
-    compute_barplots(df_lat, hparams, tag)
+    compute_barplots(df_lat, hparams, tag, path_to_plot)
     ## diff between best agent and baseline
-    compute_best_vs_base(df_lat, hparams, tag)
+    compute_best_vs_base(df_lat, hparams, tag, path_to_plot)
     ## pcoords
 
     df = df[df.Agent != "baseline"]
     df = df[df.Epoch == 49999.0]
     groups = df.groupby([*hparams], as_index=False).mean()
-    plot_pcoords(groups, [*hparams, "Value"], tag)
+    plot_pcoords(groups, [*hparams, "Value"], tag, path_to_plot)
 
 
 def _load_aes(path):
-
     autoencoders = [
         AutoEncoder(30, bnorm=False, affine=False, name=name, lr=0.001)
         for name in string.ascii_uppercase[:3]
     ]
     baseline = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
-    return autoencoders, baseline
+
+    all_agents: List[AutoEncoder] = autoencoders + [baseline]
+    [
+        agent.load_state_dict(
+            torch.load(f"{path}/{agent.name}.pt", map_location=torch.device("cpu"))
+        )
+        for agent in all_agents
+    ]
+    return all_agents
 
 
-def plot_tsne(path):
+def plot_tsne(path, path_to_plot):
     dataset = MNISTDataset()
     ims, labels = dataset.sample_with_label(5000)
-    autoencoders, baseline = _load_aes(path)
-    all_agents = autoencoders + [baseline]
-
+    all_agents = _load_aes(path)
     # load parameters from savefiles
-    for i, ae in enumerate(autoencoders):
-        ae.load_state_dict(
-            torch.load(
-                os.path.join(path, f"{string.ascii_uppercase[i]}.pt"),
-                map_location=torch.device("cpu"),
-            )
-        )
-    baseline.load_state_dict(
-        torch.load(os.path.join(path, "baseline.pt"), map_location=torch.device("cpu"))
-    )
+    # for i, ae in enumerate(autoencoders):
+    #     ae.load_state_dict(
+    #         torch.load(
+    #             os.path.join(path, f"{string.ascii_uppercase[i]}.pt"),
+    #             map_location=torch.device("cpu"),
+    #         )
+    #     )
+    # baseline.load_state_dict(
+    #     torch.load(os.path.join(path, "baseline.pt"), map_location=torch.device("cpu"))
+    # )
 
     results = []
 
@@ -269,10 +283,10 @@ def plot_tsne(path):
         for emb, label in zip(embedding, labels):
             results.append((emb[0], emb[1], int(label.item()), ae.name))
 
-    _generate_tsne_relplot(results)
+    _generate_tsne_relplot(results, path_to_plot)
 
 
-def _generate_tsne_relplot(results):
+def _generate_tsne_relplot(results, path_to_plot):
     data = pd.DataFrame(results, columns=["x", "y", "cls", "agent"])
     data["cls"] = data.cls.astype("category")
     sns.relplot(
@@ -283,8 +297,9 @@ def _generate_tsne_relplot(results):
         col="agent",
         facet_kws={"sharex": False, "sharey": False},
     )
-    plt.savefig(f"plots/t_sne.svg")
-    plt.savefig(f"plots/t_sne.pdf")
+    plt.savefig(f"plots/{path_to_plot}/t_sne.svg")
+    plt.savefig(f"plots/{path_to_plot}/t_sne.pdf")
+    plt.close()
 
 
 def predict_9s_and_4s(path):
@@ -320,34 +335,119 @@ def predict_9s_and_4s(path):
     sns.barplot(data=df, x="Agent", y="Accuracy")
     plt.savefig("plots/4s_9s_bar.pdf")
     plt.savefig("plots/4s_9s_bar.svg")
+    plt.close()
 
 
-def plot_img_reconstructions():
-    pass
+def plot_img_reconstructions(
+    root_path: str, name_of_best_exp: str, path_to_plot: str, baseline: bool = False
+):
+    dataset = MNISTDataset()
+    ae = AutoEncoder(30, False, False, 0.001, "test")
+    ae.load_state_dict(
+        torch.load(
+            os.path.join(
+                root_path,
+                name_of_best_exp,
+                f"params/step_49999/rank_0/{'A' if not baseline else 'baseline'}.pt",
+            ),
+            map_location=torch.device("cpu"),
+        )
+    )
+    digits = dataset.sample(50)
+
+    fig, axes = plt.subplots(
+        nrows=10,
+        ncols=10,
+        figsize=(10, 8),
+        gridspec_kw=dict(
+            wspace=0.0, hspace=0.0, top=0.95, bottom=0.05, left=0.17, right=0.845
+        ),
+    )
+    axes = axes.reshape(50, 2)
+
+    for digit, ax_column in zip(digits, axes):
+        ax_column[0].imshow(digit.squeeze().detach())
+        ax_column[0].set_axis_off()
+        rec = ae(digit.reshape(1, 1, 28, 28))
+        ax_column[1].imshow(rec.squeeze().detach())
+        ax_column[1].set_axis_off()
+
+    plt_path = f"plots/{path_to_plot}/reconstructions_baseline_{baseline}"
+    plt.savefig(plt_path + ".pdf")
+    plt.savefig(plt_path + ".svg")
+    plt.close()
+
+
+def plot_reconstruction_sim_measure(
+    root_path: str, name_of_exp: str, path_to_plot: str
+):
+    dataset = MNISTDataset()
+    agents = _load_aes(
+        os.path.join(root_path, name_of_exp, "params", "step_49999", "rank_0")
+    )
+
+    results = []
+    for i in range(10):
+        batch = dataset.sample_digit(i)
+        for agent in agents:
+            rec = agent(batch)
+            for a, b in combinations(rec, r=2):
+                diff = F.mse_loss(a, b)
+                results.append(
+                    ("MA" if agent.name != "baseline" else "baseline", diff.item())
+                )
+    df = pd.DataFrame(results, columns=["Agent", "Difference"])
+    sns.barplot(data=df, x="Agent", y="Difference")
+    plt_name = f"plots/{path_to_plot}/decoding_space_diff"
+    plt.savefig(plt_name + ".svg")
+    plt.savefig(plt_name + ".pdf")
+    plt.close()
 
 
 def compute_and_save_cov_matrix():
     pass
 
 
-def make_plots(path: AnyStr, hparams: List):
+def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
+    if not os.path.exists("plots/" + path_to_plot):
+        os.makedirs("plots/" + path_to_plot)
 
-    # df = load_data_raw(path)
+    df = load_data_raw(path_to_results)
 
-    # compute_plots_latent(df, hparams)
-    # compute_plots_rec(df, hparams)
+    compute_plots_latent(df, hparams, path_to_plot)
+    compute_plots_rec(df, hparams, path_to_plot)
+
+    # this should be automatically determined?
+    #  40 draws run
+    # name_of_best_exp = (
+    #     "sigma:0.503-eta_lsa:0.015-eta_ae:0.036-eta_dsa:0.936-eta_msa:0.7-"
+    # )
+    # 100 draws only msa
+    # name_of_best_exp = "sigma:0-eta_lsa:0-eta_msa:1-eta_dsa:0-eta_ae:0-"
+    name_of_best_exp = (
+        "sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-"
+    )
 
     # t-sne in latent space
-    # plot_tsne(
+    plot_tsne(
+        os.path.join(path_to_results, name_of_best_exp, "params/step_49999/rank_0"),
+        path_to_plot,
+    )
+
+    # this is a separate experiment, should be done elsewhere
+    # predict_9s_and_4s(
     #     "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-12/21-04-14/"
     #     "sigma:0.503-eta_lsa:0.015-eta_ae:0.036-eta_dsa:0.936-eta_msa:0.7-/params/step_49999/rank_0"
     # )
-    predict_9s_and_4s(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-12/21-04-14/"
-        "sigma:0.503-eta_lsa:0.015-eta_ae:0.036-eta_dsa:0.936-eta_msa:0.7-/params/step_49999/rank_0"
-    )
+
     # reconstruction from good marl agents vs. baseline agents for some digits
-    plot_img_reconstructions()
+    plot_img_reconstructions(
+        path_to_results, name_of_best_exp, path_to_plot, baseline=False
+    )
+    plot_img_reconstructions(
+        path_to_results, name_of_best_exp, path_to_plot, baseline=True
+    )
+    plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
     # covariance matric between hparams and losses (final?)
     compute_and_save_cov_matrix()
@@ -378,6 +478,7 @@ class MLP(nn.Module):
 
 if __name__ == "__main__":
     make_plots(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-12/21-04-14",
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-16/13-15-58",
         ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
+        "100-draws",
     )

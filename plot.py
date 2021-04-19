@@ -1,8 +1,6 @@
 from functions import import_experiment_class
 import os
 import argparse
-import importlib
-from experiments.predict_4s_9s import Experiment
 from chunked_writer import TidyReader
 
 parser = argparse.ArgumentParser()
