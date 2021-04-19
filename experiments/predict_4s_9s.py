@@ -24,6 +24,7 @@ class Config(NamedTuple):
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
         print(self.dev)
+
         path = f"results/step_49999/rank_{self.rank}"
         dataset = MNISTDataset()
         all_agents: List[AutoEncoder] = self._load_aes(path)
@@ -32,7 +33,7 @@ class Experiment(BaseExperiment):
         bsize = 512
         nsteps = 1000
 
-        digits = [4, 7, 9]
+        digits = list(range(10))
 
         for mlp, agent in zip(mlps, all_agents):
             for i in range(nsteps):
