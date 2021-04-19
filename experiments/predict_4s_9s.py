@@ -23,10 +23,7 @@ class Config(NamedTuple):
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
-        path = (
-            f"results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-12/21-04-14/"
-            f"sigma:0.503-eta_lsa:0.015-eta_ae:0.036-eta_dsa:0.936-eta_msa:0.7-/params/step_49999/rank_{self.rank}"
-        )
+        path = f"results/step_49999/rank_{self.rank}"
         dataset = MNISTDataset()
         all_agents: List[AutoEncoder] = self._load_aes(path)
 
