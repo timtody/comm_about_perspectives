@@ -137,7 +137,6 @@ class TidyReader:
         csv_paths: List = list(Path(path).glob(f"*.{tag}.csv"))
         sort_key: Callable[[PosixPath], str] = lambda x: str(x).split(".")[0]
         sorted_paths: List = sorted(csv_paths, key=sort_key, reverse=True)
-
         dataframes: List[pd.DataFrame] = []
         for path in sorted_paths:
             df: pd.DataFrame = pd.read_csv(path, header=None, names=columns)

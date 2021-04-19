@@ -1,6 +1,6 @@
 import argparse
-from experiments.shared_ref_mnist import Experiment
-from experiments.experiment import BaseExperiment
+import copy
+import importlib
 import multiprocessing as mp
 import os
 import time
@@ -9,10 +9,22 @@ from multiprocessing import Barrier
 from multiprocessing.context import Process
 from typing import Callable, Dict, List, NamedTuple
 
-import copy
-
 import c_types
 from chunked_writer import MultiProcessingWriter, TidyReader
+from experiments.experiment import BaseExperiment
+from experiments.shared_ref_mnist import Experiment
+
+
+def import_experiment_class(filename: str):
+    module = importlib.import_module("." + filename, package="experiments")
+    Experiment = getattr(module, "Experiment")
+    return Experiment
+
+
+def import_config_class(filename: str):
+    module = importlib.import_module("." + filename, package="experiments")
+    Config = getattr(module, "Config")
+    return Config
 
 
 def merge_cfg_with_cli(cfg: NamedTuple, parser: ArgumentParser = None):
@@ -40,7 +52,7 @@ def create_exp_name_and_datetime_path(experiment):
 def start_procs(
     fn: Callable,
     cfg: Dict = {},
-    experiment: c_types.BaseExperiment = None,
+    experiment: BaseExperiment = None,
     path: str = "",
     barrier: Barrier = None,
 ):
@@ -62,7 +74,7 @@ def start_procs(
 
 def start_procs_without_join(
     cfg: Dict = {},
-    experiment: c_types.BaseExperiment = None,
+    experiment: BaseExperiment = None,
     path: str = "",
     barrier: Barrier = None,
 ) -> List[Process]:
@@ -93,7 +105,7 @@ def start_proc(
 
 
 def start_exp(
-    experiment: c_types.BaseExperiment,
+    experiment: BaseExperiment,
     cfg: Dict,
     rank: int,
     writer: MultiProcessingWriter,
@@ -102,17 +114,16 @@ def start_exp(
     barrier: Barrier,
 ):
     exp = experiment(cfg, rank, writer, reader, path, barrier)
-    exp.run(cfg)
+    exp._run(cfg)
 
 
-def run(experiment: c_types.BaseExperiment, cfg: Namespace, path: str):
+def run(experiment: BaseExperiment, cfg: Namespace, path: str):
     os.makedirs(path)
-    barrier = Barrier(cfg.nprocs)
-    start_procs(start_exp, cfg, experiment, path, barrier)
+    start_procs(start_exp, cfg, experiment, path)
 
 
 def run_single_from_sweep_mp(
-    experiment: c_types.BaseExperiment, cfg: Namespace, path: str
+    experiment: BaseExperiment, cfg: Namespace, path: str
 ) -> List[Process]:
     os.makedirs(path)
     barrier = Barrier(cfg.nprocs)

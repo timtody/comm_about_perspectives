@@ -3,7 +3,7 @@ import multiprocessing as mp
 import os
 from abc import ABC, abstractmethod, abstractstaticmethod
 from multiprocessing import Barrier
-from typing import Any, Dict, Literal, NamedTuple
+from typing import Any, Dict, Literal, NamedTuple, final
 
 import c_types
 import matplotlib.pyplot as plt
@@ -51,7 +51,10 @@ class BaseExperiment(ABC):
 
     def _dump_cfg(self, cfg):
         with open(os.path.join(self.path, "cfg.json"), "w") as f:
-            json.dump(vars(cfg), f)
+            try:
+                json.dump(vars(cfg), f)
+            except:
+                json.dump(cfg._asdict(), f)
 
     def _run_experiment(self):
         self.pre_forward_hook()
@@ -61,6 +64,10 @@ class BaseExperiment(ABC):
 
     def pre_forward_hook(self):
         ...
+
+    def _run(self, cfg):
+        self.run(cfg)
+        self.writer._write()
 
     @abstractmethod
     def run(self):

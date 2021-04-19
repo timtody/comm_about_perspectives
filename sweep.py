@@ -115,7 +115,7 @@ if __name__ == "__main__":
     merge_cfg_with_cli(cfg, parser)
     runner_args = RunnerCfg()
     args = parser.parse_args()
-    
+
     hparams = ["sigma", "eta_lsa", "eta_msa", "eta_dsa", "eta_ae"]
 
     sweep_root_path = generate_sweep_path(Experiment)
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         else:
             for param in hparams:
                 args.__setattr__(param, round(np.random.rand(), 3))
-    
+
         path: str = generate_run_path(sweep_root_path, args, hparams)
         print("Starting experiment on path", path)
         if args.mp_method == "mp":
