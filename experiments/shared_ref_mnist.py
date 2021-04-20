@@ -13,7 +13,6 @@ import torch.optim as optim
 from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
-from pandas.core.indexing import convert_to_index_sliceable
 from torch.tensor import Tensor
 from torch.utils.tensorboard import SummaryWriter
 
