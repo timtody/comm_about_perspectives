@@ -1,6 +1,6 @@
 import os
 from functions import merge_cfg_with_cli
-from main import Experiment, Config
+from sweep import Experiment, Config
 from chunked_writer import MultiProcessingWriter, TidyReader
 from argparse import ArgumentParser
 
