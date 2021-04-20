@@ -42,7 +42,9 @@ class Experiment(BaseExperiment):
                 encoding = agent.encode(ims)
                 mlp.train(encoding, targets)
                 acc = mlp.compute_acc(encoding, targets)
-                self.writer.add((agent.name, i, acc), step=i)
+                self.writer.add(
+                    ("MARL" if agent.name != "baseline" else "Baseline", i, acc), step=i
+                )
 
     def _load_aes(self, path):
         autoencoders = [
