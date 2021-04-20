@@ -124,8 +124,8 @@ if __name__ == "__main__":
         sweep_root_path = os.path.join(os.path.expandvars("$SCRATCH"), sweep_root_path)
 
     processes = []
-    for i in range(args.nsamples + 4):
-        if i <= 3:
+    for i in range(args.nsamples + len(hparams)):
+        if i < len(hparams):
             for param in hparams:
                 args.__setattr__(param, 1 if hparams.index(param) == i else 0)
         else:

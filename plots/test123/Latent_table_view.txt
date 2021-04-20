@@ -1,0 +1,9 @@
+\begin{tabular}{llllllrrrr}
+\toprule
+Empty DataFrame
+Columns: Index(['eta\_ae', 'eta\_lsa', 'eta\_dsa', 'eta\_msa', 'sigma', 'Value', 'Metric',
+       'Type', 'Agent'],
+      dtype='object')
+Index: Int64Index([], dtype='int64') \\
+\bottomrule
+\end{tabular}

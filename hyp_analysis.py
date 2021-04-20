@@ -427,7 +427,7 @@ def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
     # name_of_best_exp = (
     #     "sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-"
     # )
-    name_of_best_exp = "sigma:0-eta_lsa:1-eta_msa:0-eta_dsa:0-eta_ae:0-"
+    name_of_best_exp = "sigma:0-eta_lsa:0-eta_msa:0-eta_dsa:0-eta_ae:1-"
 
     # t-sne in latent space
     plot_tsne(
@@ -479,7 +479,7 @@ class MLP(nn.Module):
 
 if __name__ == "__main__":
     make_plots(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-16/13-15-58",
+        "results/sweeps/shared_ref_mnist/2021-04-20/12-10-42",
         ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
-        "100-draws-lsa",
+        "test123",
     )
