@@ -18,6 +18,8 @@ from torch.utils.tensorboard import SummaryWriter
 
 from experiments.experiment import BaseExperiment
 
+eps = 0.0001
+
 
 class Experiment(BaseExperiment):
     def log(self, step: int, agents):
@@ -149,10 +151,10 @@ class Experiment(BaseExperiment):
             self.tb.add_scalar(f"LSAloss{ba_name}", lsa_loss_b, step)
 
             self.tb.add_scalar(
-                f"LSA-mbvar{ab_name}", lsa_loss_a / (mbvar_a + 0.0001), step
+                f"LSA-mbvar{ab_name}", lsa_loss_a / (mbvar_a + eps), step
             )
             self.tb.add_scalar(
-                f"LSA-mbvar{ba_name}", lsa_loss_b / (mbvar_b + 0.0001), step
+                f"LSA-mbvar{ba_name}", lsa_loss_b / (mbvar_b + eps), step
             )
 
             self.writer.add_multiple(
@@ -163,7 +165,7 @@ class Experiment(BaseExperiment):
                     (dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
                     (mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
                     (
-                        lsa_loss_a.item() / (mbvar_a.item() + 0.0001),
+                        lsa_loss_a.item() / (mbvar_a.item() + eps),
                         "LSA-MBVAR",
                         agent_a.name,
                         agent_b.name,
@@ -174,7 +176,7 @@ class Experiment(BaseExperiment):
                     (dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
                     (mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
                     (
-                        lsa_loss_b.item() / (mbvar_b.item() + 0.0001),
+                        lsa_loss_b.item() / (mbvar_b.item() + eps),
                         "LSA-MBVAR",
                         agent_b.name,
                         agent_a.name,
@@ -251,14 +253,14 @@ class Experiment(BaseExperiment):
         df = reader.read(
             tag="loss", columns=["Step", "Rank", "Loss", "Type", "Agent_A", "Agent_B"]
         )
-        groups = df.groupby(["Rank", "Type", "Agent_A"], as_index=False).apply(
-            lambda x: x[::10]
-        )
-        return df
+        df.loc[df["Agent_A"] == "baseline", "Agent_B"] = "baseline"
+        groups = df.groupby(
+            ["Rank", "Type", "Agent_A", "Agent_B"], as_index=False
+        ).apply(lambda x: x.sort_values(by="Step")[::50])
+        return groups
 
     @staticmethod
     def plot(df, path):
-        # df = df[df.Type == "AE"]
         sns.relplot(
             data=df,
             x="Step",
@@ -266,11 +268,12 @@ class Experiment(BaseExperiment):
             col="Type",
             hue="Agent_A",
             kind="line",
-            ci=None,
+            # ci=None,
             col_wrap=3,
             facet_kws=dict(sharey=False),
         )
         plot_path = f"{path}/loss"
+        df.to_csv(plot_path + ".csv")
         plt.savefig(plot_path + ".pdf")
         plt.savefig(plot_path + ".svg")
 
