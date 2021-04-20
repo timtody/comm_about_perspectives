@@ -1,5 +1,4 @@
 import os
-import random
 import string
 from itertools import combinations
 from pathlib import Path
@@ -20,6 +19,9 @@ from sklearn.manifold import TSNE
 from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
+
+
+EPOCH = 49999.0
 
 
 def load_df_and_params(posixpath, tag, columns):
@@ -90,9 +92,9 @@ def plot_pcoords(df, labels, tag, path_to_plot):
     plt.close()
 
 
-def series_to_mean(df):
+def series_to_mean(df, threshold=4000):
     groups = df.groupby(["Rank", "Metric", "Type", "Agent", "Epoch"], as_index=False)
-    return groups.apply(lambda x: x[x["Step"] >= 4000].mean())
+    return groups.apply(lambda x: x[x["Step"] >= threshold].mean())
 
 
 def load_data(path, type="Reconstruction"):
@@ -143,7 +145,7 @@ def load_data_raw(path):
             ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
         )
         df = df[(df["Metric"] == "Accuracy")]
-        df = series_to_mean(df)
+        df = series_to_mean(df, threshold=0)
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
@@ -155,7 +157,7 @@ def compute_and_save_reg_coefs(df, hparams, tag, path_to_plot):
 
     ## filter out baseline because most parameters have no influence on it
     ## only look at last epoch
-    df = df[(df["Agent"] != "baseline") & (df["Epoch"] == 49999.0)]
+    df = df[(df["Agent"] != "baseline") & (df["Epoch"] == EPOCH)]
     ## compute the mean across ranks and agents to arrive at 1 acc. value per set of hparams
     groups: DataFrame = df.groupby(hparams, as_index=False).mean()
 
@@ -177,7 +179,7 @@ def compute_and_save_reg_coefs(df, hparams, tag, path_to_plot):
 
 def compute_barplots(df, hparams, tag, path_to_plot):
     df = get_best_params(df, 0.0, hparams)
-    df = df[df["Epoch"] == 49999.0]
+    df = df[df["Epoch"] == EPOCH]
     param_col_name = ""
     for param in hparams:
         param_col_name += param + "=" + df[param] + " "
@@ -203,7 +205,7 @@ def compute_best_vs_base(df, hparams, tag, path_to_plot):
         ),
     )
     trans = trans[trans.Agent == "baseline"]
-    trans = trans[trans.Epoch == 49999.0]
+    trans = trans[trans.Epoch == EPOCH]
     trans = trans.loc[
         :, ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma", "Epoch", "max_diff"]
     ].sort_values(by="max_diff", axis=0, ascending=False)
@@ -235,7 +237,7 @@ def _make_plots(df, hparams, tag, path_to_plot):
     ## pcoords
 
     df = df[df.Agent != "baseline"]
-    df = df[df.Epoch == 49999.0]
+    df = df[df.Epoch == EPOCH]
     groups = df.groupby([*hparams], as_index=False).mean()
     plot_pcoords(groups, [*hparams, "Value"], tag, path_to_plot)
 
@@ -261,17 +263,6 @@ def plot_tsne(path, path_to_plot):
     dataset = MNISTDataset()
     ims, labels = dataset.sample_with_label(5000)
     all_agents = _load_aes(path)
-    # load parameters from savefiles
-    # for i, ae in enumerate(autoencoders):
-    #     ae.load_state_dict(
-    #         torch.load(
-    #             os.path.join(path, f"{string.ascii_uppercase[i]}.pt"),
-    #             map_location=torch.device("cpu"),
-    #         )
-    #     )
-    # baseline.load_state_dict(
-    #     torch.load(os.path.join(path, "baseline.pt"), map_location=torch.device("cpu"))
-    # )
 
     results = []
 
@@ -302,42 +293,6 @@ def _generate_tsne_relplot(results, path_to_plot):
     plt.close()
 
 
-def predict_9s_and_4s(path):
-    # torch.manual_seed(42)
-    dataset = MNISTDataset()
-    autoencoders, baseline = _load_aes(path)
-    all_agents: List[AutoEncoder] = autoencoders + [baseline]
-
-    results = []
-
-    mlps: List[MLP] = [MLP(30) for _ in all_agents]
-    [mlp.eval() for mlp in mlps]
-    bsize = 128
-    nsteps = 100
-
-    for mlp, agent in zip(mlps, all_agents):
-        for i in range(nsteps):
-            digit = random.choice([4, 9])
-            ims = dataset.sample_digit(digit, bsize)
-            encoding = agent.encode(ims)
-            targets = torch.empty(bsize).fill_(digit).long()
-            mlp.train_batch(encoding, targets)
-            acc = mlp.compute_acc(encoding, targets)
-            results.append((agent.name, i, acc))
-
-    df = pd.DataFrame(results, columns=["Agent", "Step", "Accuracy"])
-    df = (
-        df.groupby(["Agent"], as_index=False)
-        .apply(lambda x: x[x.Step >= nsteps - 50])
-        .groupby(["Agent"], as_index=False)
-        .mean()
-    )
-    sns.barplot(data=df, x="Agent", y="Accuracy")
-    plt.savefig("plots/4s_9s_bar.pdf")
-    plt.savefig("plots/4s_9s_bar.svg")
-    plt.close()
-
-
 def plot_img_reconstructions(
     root_path: str, name_of_best_exp: str, path_to_plot: str, baseline: bool = False
 ):
@@ -348,7 +303,7 @@ def plot_img_reconstructions(
             os.path.join(
                 root_path,
                 name_of_best_exp,
-                f"params/step_49999/rank_0/{'A' if not baseline else 'baseline'}.pt",
+                f"params/step_{int(EPOCH)}/rank_0/{'A' if not baseline else 'baseline'}.pt",
             ),
             map_location=torch.device("cpu"),
         )
@@ -383,7 +338,7 @@ def plot_reconstruction_sim_measure(
 ):
     dataset = MNISTDataset()
     agents = _load_aes(
-        os.path.join(root_path, name_of_exp, "params", "step_49999", "rank_0")
+        os.path.join(root_path, name_of_exp, "params", f"step_{int(EPOCH)}", "rank_0")
     )
 
     results = []
@@ -431,7 +386,9 @@ def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
 
     # t-sne in latent space
     plot_tsne(
-        os.path.join(path_to_results, name_of_best_exp, "params/step_49999/rank_0"),
+        os.path.join(
+            path_to_results, name_of_best_exp, f"params/step_{int(EPOCH)}/rank_0"
+        ),
         path_to_plot,
     )
 
@@ -452,29 +409,6 @@ def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
 
     # covariance matric between hparams and losses (final?)
     compute_and_save_cov_matrix()
-
-
-class MLP(nn.Module):
-    def __init__(self, input_size: int):
-        super().__init__()
-        self.l = nn.Linear(input_size, 10)
-        self.opt = optim.Adam(self.parameters())
-
-    def forward(self, x):
-        return self.l(x)
-
-    def compute_acc(self, ims, labels):
-        pred: torch.Tensor = self.l(ims).argmax(dim=1)
-        acc = (pred == labels).float().mean()
-        return acc.item()
-
-    def train_batch(self, inputs, targets):
-        x = self.l(inputs)
-        loss = F.cross_entropy(x, targets)
-        self.opt.zero_grad()
-        loss.backward()
-        self.opt.step()
-        return loss.item()
 
 
 if __name__ == "__main__":

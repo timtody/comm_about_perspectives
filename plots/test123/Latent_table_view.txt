@@ -1,9 +1,13 @@
-\begin{tabular}{llllllrrrr}
+\begin{tabular}{llllllr}
 \toprule
-Empty DataFrame
-Columns: Index(['eta\_ae', 'eta\_lsa', 'eta\_dsa', 'eta\_msa', 'sigma', 'Value', 'Metric',
-       'Type', 'Agent'],
-      dtype='object')
-Index: Int64Index([], dtype='int64') \\
+{} & eta\_ae & eta\_lsa & eta\_dsa & eta\_msa &  sigma &     Value \\
+\midrule
+6 &      1 &       0 &       0 &       0 &      0 &  0.104167 \\
+3 &      0 &       1 &       0 &       0 &      0 &  0.093750 \\
+4 &  0.325 &   0.499 &   0.394 &   0.833 &  0.903 &  0.093750 \\
+0 &      0 &       0 &       0 &       0 &      1 &  0.083333 \\
+1 &      0 &       0 &       0 &       1 &      0 &  0.083333 \\
+2 &      0 &       0 &       1 &       0 &      0 &  0.083333 \\
+5 &  0.382 &   0.537 &   0.534 &   0.323 &  0.358 &  0.083333 \\
 \bottomrule
 \end{tabular}
