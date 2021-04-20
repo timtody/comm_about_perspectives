@@ -27,7 +27,7 @@ class Experiment(BaseExperiment):
     def run(self, cfg: Config):
         path = (
             f"results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-16/13-15-58/"
-            f"sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-/params/step_49999/rank_{self.rank}"
+            f"sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-/params/step_49999/rank_{self.rank % 3}"
         )
         dataset = MNISTDataset()
         all_agents: List[AutoEncoder] = self._load_aes(path)
@@ -43,7 +43,13 @@ class Experiment(BaseExperiment):
                 mlp.train(encoding, targets)
                 acc = mlp.compute_acc(encoding, targets)
                 self.writer.add(
-                    ("MARL" if agent.name != "baseline" else "Baseline", i, acc), step=i
+                    (
+                        self.rank,
+                        i,
+                        "MARL" if agent.name != "baseline" else "Baseline",
+                        acc,
+                    ),
+                    step=i,
                 )
 
     def _load_aes(self, path):
@@ -78,7 +84,7 @@ class Experiment(BaseExperiment):
 
     @staticmethod
     def load_data(reader) -> Any:
-        df = reader.read(columns=["Agent", "Step", "Accuracy"])
+        df = reader.read(columns=["Rank", "Step", "Agent", "Accuracy"])
         df = df.groupby(["Agent"], as_index=False).apply(lambda x: x[::125])
         return df
 
