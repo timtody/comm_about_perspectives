@@ -1,21 +1,23 @@
 import itertools
 import os
-import string
 import random
+import string
 from typing import AnyStr, List, NamedTuple
 
+import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from autoencoder import AutoEncoder
+from chunked_writer import TidyReader
 from mnist import MNISTDataset
+from pandas.core.indexing import convert_to_index_sliceable
 from torch.tensor import Tensor
 from torch.utils.tensorboard import SummaryWriter
 
 from experiments.experiment import BaseExperiment
-
-# TODO: add the sweep parameters to the writers
 
 
 class Experiment(BaseExperiment):
@@ -40,7 +42,7 @@ class Experiment(BaseExperiment):
         agent_index_pairs = list(itertools.combinations(range(len(agents)), r=2))
         for i in range(cfg.nsteps):
             for agent_index_pair in agent_index_pairs:
-                # maybe shuffle order
+                # maybe shuffle order to break symmetry
                 shuffle = random.choice([0, 1])
                 agent_indices = (
                     reversed(agent_index_pair) if shuffle else agent_index_pair
@@ -85,8 +87,8 @@ class Experiment(BaseExperiment):
         ## rec_ab is a's reconstruction of b's message and so forth..
         rec_aa = agent_a.decode(msg_a)
         rec_bb = agent_b.decode(msg_b)
-        rec_ab = agent_a.decode(msg_b)
-        rec_ba = agent_b.decode(msg_a)
+        rec_ab = agent_a.decode(msg_b.detach())
+        rec_ba = agent_b.decode(msg_a.detach())
 
         # autoencoding
         ae_loss_a = F.mse_loss(rec_aa, batch_a)
@@ -147,8 +149,12 @@ class Experiment(BaseExperiment):
             self.tb.add_scalar(f"LSAloss{ab_name}", lsa_loss_a, step)
             self.tb.add_scalar(f"LSAloss{ba_name}", lsa_loss_b, step)
 
-            self.tb.add_scalar(f"LSA-mbvar{ab_name}", lsa_loss_a / mbvar_a, step)
-            self.tb.add_scalar(f"LSA-mbvar{ba_name}", lsa_loss_b / mbvar_b, step)
+            self.tb.add_scalar(
+                f"LSA-mbvar{ab_name}", lsa_loss_a / (mbvar_a + 0.0001), step
+            )
+            self.tb.add_scalar(
+                f"LSA-mbvar{ba_name}", lsa_loss_b / (mbvar_b + 0.0001), step
+            )
 
             self.writer.add_multiple(
                 [
@@ -158,7 +164,7 @@ class Experiment(BaseExperiment):
                     (dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
                     (mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
                     (
-                        lsa_loss_a.item() / mbvar_a.item(),
+                        lsa_loss_a.item() / (mbvar_a.item() + 0.0001),
                         "LSA-MBVAR",
                         agent_a.name,
                         agent_b.name,
@@ -169,7 +175,7 @@ class Experiment(BaseExperiment):
                     (dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
                     (mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
                     (
-                        lsa_loss_b.item() / mbvar_b.item(),
+                        lsa_loss_b.item() / (mbvar_b.item() + 0.0001),
                         "LSA-MBVAR",
                         agent_b.name,
                         agent_a.name,
@@ -240,6 +246,34 @@ class Experiment(BaseExperiment):
                         step=step,
                         tag="pred_from_latent",
                     )
+
+    @staticmethod
+    def load_data(reader: TidyReader):
+        df = reader.read(
+            tag="loss", columns=["Step", "Rank", "Loss", "Type", "Agent_A", "Agent_B"]
+        )
+        groups = df.groupby(["Rank", "Type", "Agent_A"], as_index=False).apply(
+            lambda x: x[::10]
+        )
+        return df
+
+    @staticmethod
+    def plot(df, path):
+        # df = df[df.Type == "AE"]
+        sns.relplot(
+            data=df,
+            x="Step",
+            y="Loss",
+            col="Type",
+            hue="Agent_A",
+            kind="line",
+            ci=None,
+            col_wrap=3,
+            facet_kws=dict(sharey=False),
+        )
+        plot_path = f"{path}/loss"
+        plt.savefig(plot_path + ".pdf")
+        plt.savefig(plot_path + ".svg")
 
 
 class MLP(nn.Module):

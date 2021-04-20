@@ -226,7 +226,7 @@ def compute_plots_latent(df, hparams, path_to_plot):
 def _make_plots(df, hparams, tag, path_to_plot):
     # latent
     df_lat = df[df["Type"] == tag]
-    ## reg coefs
+    # reg coefs
     compute_and_save_reg_coefs(df_lat, hparams, tag, path_to_plot)
     ## barplots
     compute_barplots(df_lat, hparams, tag, path_to_plot)
@@ -424,9 +424,10 @@ def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
     # )
     # 100 draws only msa
     # name_of_best_exp = "sigma:0-eta_lsa:0-eta_msa:1-eta_dsa:0-eta_ae:0-"
-    name_of_best_exp = (
-        "sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-"
-    )
+    # name_of_best_exp = (
+    #     "sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-"
+    # )
+    name_of_best_exp = "sigma:0-eta_lsa:1-eta_msa:0-eta_dsa:0-eta_ae:0-"
 
     # t-sne in latent space
     plot_tsne(
@@ -463,7 +464,7 @@ class MLP(nn.Module):
         return self.l(x)
 
     def compute_acc(self, ims, labels):
-        pred = self.l(ims).argmax(dim=1)
+        pred: torch.Tensor = self.l(ims).argmax(dim=1)
         acc = (pred == labels).float().mean()
         return acc.item()
 
@@ -480,5 +481,5 @@ if __name__ == "__main__":
     make_plots(
         "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-16/13-15-58",
         ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
-        "100-draws",
+        "100-draws-lsa",
     )
