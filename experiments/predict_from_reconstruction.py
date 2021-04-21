@@ -34,7 +34,7 @@ class Experiment(BaseExperiment):
 
         cnns: List[CNN] = [CNN() for _ in all_agents]
         bsize = 512
-        nsteps = 5000
+        nsteps = 1000
 
         for cnn, agent in zip(cnns, all_agents):
             for i in range(nsteps):
