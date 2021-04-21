@@ -215,12 +215,6 @@ def compute_best_vs_base(
 
     # get parameter sets which are 1.0 better than baseline (i.e. all of them)
     df = get_best_params(df, 1.0, hparams)
-    # for _, group in df.groupby("Epoch"):
-    #     print("Brah")
-    #     print(group[group.Agent != "baseline"].groupby("Agent").mean())
-    #     print("BRah")
-    #     print(group[group.Agent == "baseline"].mean())
-    #     exit(1)
 
     # compute difference between best agent
     applf_fn: Callable = lambda x: x.assign(
