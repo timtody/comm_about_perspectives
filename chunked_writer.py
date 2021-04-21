@@ -145,4 +145,4 @@ class TidyReader:
         return dataframe
 
     def __repr__(self) -> str:
-        return "TidyReader"
+        return "<TidyReader path: " + self.path + ">"
