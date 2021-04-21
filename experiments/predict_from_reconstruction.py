@@ -26,7 +26,7 @@ class Config(NamedTuple):
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
         path = (
-            f"results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18/"
+            f"results/"
             f"sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-/params/step_49999/rank_{self.rank % 3}"
         )
         dataset = MNISTDataset()
