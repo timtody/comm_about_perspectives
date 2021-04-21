@@ -1,8 +1,8 @@
 import os
 import string
-from itertools import combinations
-from pathlib import Path
-from typing import AnyStr, List
+import itertools
+from pathlib import Path, PosixPath
+from typing import Any, Callable, List, Tuple, Dict
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -10,11 +10,11 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 import seaborn as sns
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
 from sklearn.linear_model import LinearRegression
 from sklearn.manifold import TSNE
+from torch.tensor import Tensor
+from torch.types import Number
 
 from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
@@ -22,9 +22,12 @@ from mnist import MNISTDataset
 
 
 EPOCH = 49999.0
+sns.set(style="whitegrid")
 
 
-def load_df_and_params(posixpath, tag, columns):
+def load_df_and_params(
+    posixpath: PosixPath, tag: str, columns: List[str]
+) -> Tuple[DataFrame, Dict[str, str]]:
     """
     Args:
         posixpath: Posixpath. Path to one specific epxeriment
@@ -51,7 +54,7 @@ def eval_d(string: str):
     return {k: v}
 
 
-def stem_to_params(stem) -> dict:
+def stem_to_params(stem: str) -> Dict[str, str]:
     """
     Helper function which takes in a path stem of the form "param:value-param2:value2..."
     and returns a dictionary of parameters, e.g. "{"param":value,...}
@@ -117,14 +120,20 @@ def load_data(path, type="Reconstruction"):
     return pd.concat(dfs)
 
 
-def get_best_params(df, tolerance=0.00, hparams=[]):
-    # compute the mean across ranks
-    groups = df.groupby([*hparams, "Agent", "Epoch"], as_index=False).mean()
-    # filter groups with lower final performance
-    res = groups.groupby([*hparams, "Epoch"]).filter(
-        lambda x: x[x["Agent"] == "baseline"].Value
-        < x[x["Agent"] != "baseline"].Value.max() + tolerance
+def get_best_params(df: DataFrame, tolerance: float = 0.00, hparams: List[str] = []):
+    """
+    Filters out results associated with hyperparameters which don't match
+    specific performance criteria, controlled by tolerance.
+
+    A set of hyperparameter gets filtered out if the mean performance (across ranks)
+    of the best agent (across ranks and agents) is worse than the mean performance
+    of the baseline (across ranks), adjusted by :tolerance:.
+    """
+    filter_fn: Callable = (
+        lambda x: x[x["Agent"] == "baseline"].mean().Value
+        < x[x["Agent"] != "baseline"].groupby("Agent").mean().Value.max() + tolerance
     )
+    res = df.groupby([*hparams, "Epoch"]).filter(filter_fn)
     return res
 
 
@@ -173,7 +182,7 @@ def compute_and_save_reg_coefs(df, hparams, tag, path_to_plot):
     X, y = groups.loc[:, hparams], groups.loc[:, "Value"]
     coefs = compute_reg_coefs(X, y)
     columns = list(map(lambda x: f"beta_{x}", hparams))
-    df_coefs = pd.DataFrame((coefs, coefs), columns=columns)
+    df_coefs = pd.DataFrame((coefs,), columns=columns)
     df_coefs.to_csv(f"plots/{path_to_plot}/{'-'.join(hparams)}_params_{tag}.csv")
 
 
@@ -196,14 +205,29 @@ def compute_barplots(df, hparams, tag, path_to_plot):
     plt.close()
 
 
-def compute_best_vs_base(df, hparams, tag, path_to_plot):
+def compute_best_vs_base(
+    df: DataFrame, hparams: List[str], tag: str, path_to_plot: str
+):
+    """
+    Plots the amount of additional accuracy the best agents gains over the baseline
+    in the best case vs. the additional accuracy the best agents gets on average.
+    """
+
+    # get parameter sets which are 1.0 better than baseline (i.e. all of them)
     df = get_best_params(df, 1.0, hparams)
-    trans = df.groupby([*hparams, "Epoch"], as_index=False).apply(
-        lambda x: x.assign(
-            max_diff=x[x.Agent != "baseline"].Value.max()
-            - x[x.Agent == "baseline"].Value,
-        ),
+    # for _, group in df.groupby("Epoch"):
+    #     print("Brah")
+    #     print(group[group.Agent != "baseline"].groupby("Agent").mean())
+    #     print("BRah")
+    #     print(group[group.Agent == "baseline"].mean())
+    #     exit(1)
+
+    # compute difference between best agent
+    applf_fn: Callable = lambda x: x.assign(
+        max_diff=x[x.Agent != "baseline"].groupby("Agent").mean().Value.max()
+        - x[x.Agent == "baseline"].Value
     )
+    trans = df.groupby([*hparams, "Epoch"], as_index=False).apply(applf_fn)
     trans = trans[trans.Agent == "baseline"]
     trans = trans[trans.Epoch == EPOCH]
     trans = trans.loc[
@@ -308,7 +332,7 @@ def plot_img_reconstructions(
             map_location=torch.device("cpu"),
         )
     )
-    digits = dataset.sample(50)
+    digits: torch.Tensor = dataset.sample(50)
 
     fig, axes = plt.subplots(
         nrows=10,
@@ -341,12 +365,13 @@ def plot_reconstruction_sim_measure(
         os.path.join(root_path, name_of_exp, "params", f"step_{int(EPOCH)}", "rank_0")
     )
 
-    results = []
+    results: List[Tuple[str, Number]] = []
     for i in range(10):
         batch = dataset.sample_digit(i)
         for agent in agents:
             rec = agent(batch)
-            for a, b in combinations(rec, r=2):
+            rec = (rec - rec.mean()) / (rec.std() + 0.0001)
+            for a, b in itertools.combinations(rec, r=2):
                 diff = F.mse_loss(a, b)
                 results.append(
                     ("MA" if agent.name != "baseline" else "baseline", diff.item())
@@ -363,7 +388,7 @@ def compute_and_save_cov_matrix():
     pass
 
 
-def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
+def make_plots(path_to_results: str, hparams: List[str], path_to_plot: str):
     if not os.path.exists("plots/" + path_to_plot):
         os.makedirs("plots/" + path_to_plot)
 
@@ -372,17 +397,9 @@ def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
     compute_plots_latent(df, hparams, path_to_plot)
     compute_plots_rec(df, hparams, path_to_plot)
 
-    # this should be automatically determined?
-    #  40 draws run
-    # name_of_best_exp = (
-    #     "sigma:0.503-eta_lsa:0.015-eta_ae:0.036-eta_dsa:0.936-eta_msa:0.7-"
-    # )
-    # 100 draws only msa
-    # name_of_best_exp = "sigma:0-eta_lsa:0-eta_msa:1-eta_dsa:0-eta_ae:0-"
-    # name_of_best_exp = (
-    #     "sigma:0.757-eta_lsa:0.004-eta_msa:0.483-eta_dsa:0.623-eta_ae:0.153-"
-    # )
-    name_of_best_exp = "sigma:0-eta_lsa:0-eta_msa:0-eta_dsa:0-eta_ae:1-"
+    name_of_best_exp = (
+        "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
+    )
 
     # t-sne in latent space
     plot_tsne(
@@ -391,12 +408,6 @@ def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
         ),
         path_to_plot,
     )
-
-    # this is a separate experiment, should be done elsewhere
-    # predict_9s_and_4s(
-    #     "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-12/21-04-14/"
-    #     "sigma:0.503-eta_lsa:0.015-eta_ae:0.036-eta_dsa:0.936-eta_msa:0.7-/params/step_49999/rank_0"
-    # )
 
     # reconstruction from good marl agents vs. baseline agents for some digits
     plot_img_reconstructions(
@@ -413,7 +424,7 @@ def make_plots(path_to_results: AnyStr, hparams: List, path_to_plot: AnyStr):
 
 if __name__ == "__main__":
     make_plots(
-        "results/sweeps/shared_ref_mnist/2021-04-20/12-10-42",
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18",
         ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
-        "test123",
+        "100-draws-fixed-high-lsa",
     )
