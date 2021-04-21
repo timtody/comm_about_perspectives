@@ -1,0 +1,7 @@
+\begin{tabular}{llllllr}
+\toprule
+{} & eta\_ae & eta\_lsa & eta\_dsa & eta\_msa & sigma &     Value \\
+\midrule
+0 &      0 &       1 &       0 &       0 &     0 &  0.112913 \\
+\bottomrule
+\end{tabular}

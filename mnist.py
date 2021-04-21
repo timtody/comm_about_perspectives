@@ -71,7 +71,7 @@ class MNISTDataset:
         val_set = dataset.data[split_indices:]
         return train_set, val_set
 
-    def sample_digit(self, digit, bsize=100) -> torch.Tensor:
+    def sample_digit(self, digit: int, bsize: int = 100) -> torch.Tensor:
         """Samples a minibatch of data from the TRAINING set. Allows to
         sample only from a subset of images of a specific digit.
 
