@@ -1,0 +1,119 @@
+import string
+from typing import Any, List
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from autoencoder import AutoEncoder
+from chunked_writer import TidyReader
+from mnist import MNISTDataset
+from pandas.core.frame import DataFrame
+
+from experiments.experiment import BaseConfig, BaseExperiment
+
+
+class MLP(nn.Module):
+    def __init__(self, input_size: int):
+        super().__init__()
+        self.l = nn.Linear(input_size, 10)
+        self.opt = optim.Adam(self.parameters())
+
+    def forward(self, x):
+        return self.l(x)
+
+    def compute_acc(self, ims, labels):
+        pred = self.l(ims).argmax(dim=1)
+        acc = (pred == labels).float().mean()
+        return acc.item()
+
+    def train(self, inputs, targets):
+        x = self.l(inputs)
+        loss = F.cross_entropy(x, targets)
+        self.opt.zero_grad()
+        loss.backward()
+        self.opt.step()
+        return loss.item()
+
+
+class Config(BaseConfig):
+    path: str
+    nsteps: int
+    bsize: int
+
+
+class Experiment(BaseExperiment):
+    def run(self, cfg: Config):
+        self.dataset = MNISTDataset()
+        agents = self.load_aes(cfg.path)
+        mlps = []
+        for agent in agents:
+            mlp = self.train_classifier(agent)
+            mlps.append(mlp)
+
+        self.compute_cross_agent_cls(agents, mlps)
+
+    def load_aes(self, path: str) -> List[AutoEncoder]:
+        autoencoders = [
+            AutoEncoder(30, bnorm=False, affine=False, name=name, lr=0.001)
+            for name in string.ascii_uppercase[:3]
+        ]
+        base1 = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
+        base2 = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
+        baselines = [base1, base2]
+
+        for agent in autoencoders:
+            agent.load_state_dict(
+                torch.load(
+                    f"{path}/rank_{self.rank % 5}/{agent.name}.pt",
+                    map_location=self.dev,
+                )
+            )
+        for i, agent in enumerate(baselines):
+            agent.load_state_dict(
+                torch.load(
+                    f"{path}/rank_{(self.rank + i) % 5}/{agent.name}.pt",
+                    map_location=self.dev,
+                )
+            )
+        return autoencoders + baselines
+
+    def train_classifier(self, agent: AutoEncoder):
+        mlp = MLP(30)
+
+        for i in range(self.cfg.nsteps):
+            X, y = map(
+                lambda x: x.to(self.dev),
+                self.dataset.sample_with_label(self.cfg.bsize),
+            )
+            latent = agent.encode(X)
+            mlp.train(latent, y)
+            acc = mlp.compute_acc(latent, y)
+            # self.writer.add((acc.item(), agent.name), step=i)
+        return mlp
+
+    def compute_cross_agent_cls(self, agents: List[AutoEncoder], mlps: List[MLP]):
+        ma_aes, ma_mlps = agents[:3], mlps[:3]
+        sa_aes, sa_mlps = agents[3:], mlps[3:]
+
+        X, y = map(
+            lambda x: x.to(self.dev),
+            self.dataset.sample_with_label(self.cfg.bsize),
+        )
+        self._compute_cross_acc(X, y, ma_aes, ma_mlps, "MA")
+        self._compute_cross_acc(X, y, sa_aes, sa_mlps, "Base")
+
+    def _compute_cross_acc(self, X, y, aes, mlps, tag, rot=1):
+        for i, (ae, mlp) in enumerate(zip(aes, mlps[rot:] + mlps[:rot])):
+            latent = ae.encode(X)
+            acc = mlp.compute_acc(latent, y)
+            self.writer.add((tag, acc), step=i)
+
+    def load_data(reader: TidyReader) -> Any:
+        return reader.read(columns=["Rank", "Step", "Agent", "Accuracy"])
+
+    def plot(df: DataFrame, plot_path: str) -> None:
+        sns.barplot(data=df, x="Agent", y="Accuracy")
+        plt.show()

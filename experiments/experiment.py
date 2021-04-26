@@ -25,6 +25,13 @@ def get_device(gpu=False, rank: int = 0, ngpus: int = 1):
     )
 
 
+class BaseConfig(NamedTuple):
+    nogpu: bool
+    nprocs: int
+    seed: int = 123
+    ngpus: int = 1
+
+
 class BaseExperiment(ABC):
     def __init__(
         self,
@@ -70,7 +77,7 @@ class BaseExperiment(ABC):
         self.writer._write()
 
     @abstractmethod
-    def run(self):
+    def run(self, cfg):
         ...
 
     def log(self, step: int = 0):
@@ -92,11 +99,11 @@ class BaseExperiment(ABC):
         os.chdir(cwd)
 
     @abstractstaticmethod
-    def plot(*args) -> None:
+    def plot(dataframes, plot_path) -> None:
         raise NotImplementedError
 
     @abstractstaticmethod
-    def load_data(reader) -> Any:
+    def load_data(reader: TidyReader) -> Any:
         ...
 
     @staticmethod

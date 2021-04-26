@@ -7,12 +7,11 @@ import time
 from argparse import ArgumentParser, Namespace
 from multiprocessing import Barrier
 from multiprocessing.context import Process
-from typing import Callable, Dict, List, NamedTuple
+from typing import Callable, Dict, List, NamedTuple, get_type_hints
 
 import c_types
 from chunked_writer import MultiProcessingWriter, TidyReader
 from experiments.experiment import BaseExperiment
-from experiments.shared_ref_mnist import Experiment
 
 
 def import_experiment_class(filename: str):
@@ -28,17 +27,44 @@ def import_config_class(filename: str):
 
 
 def merge_cfg_with_cli(cfg: NamedTuple, parser: ArgumentParser = None):
-    if parser is None:
-        parser = argparse.ArgumentParser()
-    for field in cfg._fields:
-        if isinstance(cfg.__getattribute__(field), bool):
-            parser.add_argument(f"--{field}", action="store_true")
+    parser = parser if parser is not None else argparse.ArgumentParser()
+    for field, dtype in get_type_hints(cfg).items():
+        if dtype is bool:
+           parser.add_argument(f"--{field}", action="store_true")
         else:
-            parser.add_argument(
-                f"--{field}",
-                type=type(cfg.__getattribute__(field)),
-                default=cfg.__getattribute__(field),
-            )
+            if field in cfg._field_defaults.keys():
+                parser.add_argument(
+                    f"--{field}",
+                    type=dtype,
+                    default=cfg._field_defaults[field],
+                )
+            else:
+                parser.add_argument(
+                    f"--{field}",
+                    type=dtype,
+                    required=True,
+                )
+    # for field in cfg._fields:
+    #     print(field)
+    #     print(cfg)
+    #     print("Type", get_type_hints(field))
+    #     print(cfg.__getattribute__(field))
+        
+    #     if isinstance(cfg.__getattribute__(field), bool):
+    #         parser.add_argument(f"--{field}", action="store_true")
+    #     else:
+    #         if field in cfg._field_defaults.keys():
+    #             parser.add_argument(
+    #                 f"--{field}",
+    #                 type=type(cfg.__getattribute__(field)),
+    #                 default=cfg.__getattribute__(field),
+    #             )
+    #         else:
+    #             parser.add_argument(
+    #                 f"--{field}",
+    #                 type=type(cfg.__getattribute__(field)),
+    #                 required=True,
+    #             )
     return parser
 
 
