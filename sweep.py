@@ -116,7 +116,7 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
 
-    hparams = ["sigma", "eta_lsa", "eta_msa", "eta_dsa", "eta_ae"]
+    hparams = ["sigma", "eta_dsa"]
 
     sweep_root_path = generate_sweep_path(Experiment)
 
@@ -131,6 +131,8 @@ if __name__ == "__main__":
         else:
             for param in hparams:
                 args.__setattr__(param, round(np.random.rand(), 3))
+        
+        args.eta_ae = round(1 - args.eta_dsa, 3)
 
         path: str = generate_run_path(sweep_root_path, args, hparams)
         print("Starting experiment on path", path)
