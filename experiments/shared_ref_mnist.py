@@ -105,8 +105,8 @@ class Experiment(BaseExperiment):
 
         # decoding space adaptation
         # NOTE: we might NOT want to detach here, discuss with Clem
-        dsa_loss_a = F.mse_loss(rec_ab, rec_aa.detach())
-        dsa_loss_b = F.mse_loss(rec_ba, rec_bb.detach())
+        dsa_loss_a = F.mse_loss(rec_ab, rec_aa)
+        dsa_loss_b = F.mse_loss(rec_ba, rec_bb)
 
         with torch.no_grad():
             # compute mean batch var per feature
