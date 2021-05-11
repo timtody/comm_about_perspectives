@@ -13,7 +13,6 @@ class Config(NamedTuple):
     nprocs: int = 0
     seed: int = 123
     ngpus: int = 1
-    path: str = ""
     nsteps: int = 0
     bsize: int = 0
     eval_bsize: int = 0
@@ -35,8 +34,6 @@ if __name__ == "__main__":
     runner_cfg = RunnerCfg()
 
     for path in list(exp_paths)[:1]:
-        cfg = Config(
-            path=path, nsteps=2500, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5
-        )
+        cfg = Config(nsteps=2500, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5)
         for rank in range(runner_cfg.nprocs):
             run_single_from_sweep_slurm(cfg, runner_cfg, path, rank, "cooljob")
