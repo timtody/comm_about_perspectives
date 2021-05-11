@@ -6,7 +6,7 @@ from experiments.experiment import BaseConfig
 from experiments.plot_cross_agent_cls import Experiment
 from slurm_runner_cross_agent import run_single_from_sweep_slurm
 
-PATH = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18"
+PATH = "results/sweeps/shared_ref_mnist/2021-04-20/14-58-18"
 PATH = os.path.join(os.path.expandvars("$SCRATCH"), PATH)
 
 
