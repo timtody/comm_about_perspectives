@@ -84,7 +84,7 @@ class Experiment(BaseExperiment):
         for i, agent in enumerate(baselines):
             agent.load_state_dict(
                 torch.load(
-                    f"{path}/rank_{(self.rank + i) % 5}/{agent.name}.pt",
+                    f"{path}/rank_{(int(self.rank) + i) % 5}/{agent.name}.pt",
                     map_location=self.dev,
                 )
             )
