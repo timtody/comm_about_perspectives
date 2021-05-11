@@ -104,7 +104,7 @@ class Experiment(BaseExperiment):
                 lambda x: x.to(self.dev),
                 self.dataset.sample_with_label(int(self.cfg.bsize)),
             )
-            print(latent)
+            print(X)
             print(agent)
             latent = agent.encode(X)
             mlp.train(latent, y)
