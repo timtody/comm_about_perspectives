@@ -128,7 +128,7 @@ class Experiment(BaseExperiment):
         for i, (ae, mlp) in enumerate(zip(aes, mlps[rot:] + mlps[:rot])):
             latent = ae.encode(X)
             acc = mlp.compute_acc(latent, y)
-            self.writer.add((tag, acc), step=i, tag="cross_agent_accuracy")
+            self.writer.add((tag, acc), step=i, tag="cross_agent_accuracy_override")
             self.tb.add_scalar(f"cross_agent_acc_{tag}", acc)
 
     def load_data(reader: TidyReader) -> Any:
