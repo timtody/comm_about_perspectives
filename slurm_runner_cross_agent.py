@@ -16,9 +16,6 @@ def unpack_args(**kwargs):
 def run_single_from_sweep_slurm(cfg: NamedTuple, runner_args, path, rank, jobname):
     # TODO: make experiment configurable from command line s.t. we can pass it on
     # as an argument here
-    print(cfg)
-    print(dict(cfg))
-    exit(1)
     print("Running SLURM experiment at path:", path)
     if not os.path.exists(path):
         os.makedirs(path)
@@ -40,7 +37,7 @@ def run_single_from_sweep_slurm(cfg: NamedTuple, runner_args, path, rank, jobnam
         f"module purge\n"
         f"module load python/3.8.2\n"
         f"set -x\n"
-        f"srun python run_exp.py --rank {rank} --path {path} {unpack_args(**dict(cfg))}\n"
+        f"srun python run_exp.py --rank {rank} --path {path} {unpack_args(**cfg._asdict())}\n"
     )
     with open("tmp", "w") as f:
         f.writelines(sbatch_file)
