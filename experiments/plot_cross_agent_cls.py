@@ -94,6 +94,7 @@ class Experiment(BaseExperiment):
             latent = agent.encode(X)
             mlp.train(latent, y)
             acc = mlp.compute_acc(latent, y)
+            self.tb.add_scalar("Accuracy", acc, global_step=i)
             # self.writer.add((acc.item(), agent.name), step=i)
         return mlp
 
@@ -113,6 +114,7 @@ class Experiment(BaseExperiment):
             latent = ae.encode(X)
             acc = mlp.compute_acc(latent, y)
             self.writer.add((tag, acc), step=i, tag="cross_agent_cls")
+            self.tb.add_scalar(tag, acc)
 
     def load_data(reader: TidyReader) -> Any:
         return reader.read(columns=["Rank", "Step", "Agent", "Accuracy"])
