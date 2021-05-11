@@ -15,7 +15,9 @@ def unpack_args(**kwargs):
 def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
     # TODO: make experiment configurable from command line s.t. we can pass it on
     # as an argument here
+    print("Running SLURM experiment at path:", path)
     if not os.path.exists(path):
+        print("Path exists, skipping file creation...")
         os.makedirs(path)
     sbatch_file = (
         f"#!/bin/bash\n"
@@ -37,5 +39,7 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
     )
     with open("tmp", "w") as f:
         f.writelines(sbatch_file)
+    print("Sending it off..")
     subprocess.run(["sbatch", "tmp", "&"])
+    print("Cleanup...")
     subprocess.run(["rm", "tmp"])

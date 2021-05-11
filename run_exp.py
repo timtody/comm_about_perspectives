@@ -1,7 +1,7 @@
 import argparse
 
 from numpy import exp
-from chunked_writer import TidyWriter
+from chunked_writer import MultiProcessingWriter
 from compute_cross_cls import Config
 from experiments.plot_cross_agent_cls import Experiment
 
@@ -11,6 +11,6 @@ parser.add_argument("--rank", required=True)
 args = parser.parse_args()
 
 cfg = Config()
-writer = TidyWriter(args.path)
+writer = MultiProcessingWriter(args.path, rank=args.rank)
 experiment = Experiment(cfg, args.rank, writer, None, args.path)
 experiment.run(cfg)
