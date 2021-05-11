@@ -1,3 +1,4 @@
+import os
 import string
 from typing import Any, List
 
@@ -51,7 +52,13 @@ class Experiment(BaseExperiment):
         self.tb = SummaryWriter(tb_path)
 
         self.dataset = MNISTDataset()
-        agents = self.load_aes(self.path)
+        agents = self.load_aes(
+            os.path.join(
+                self.path,
+                "params",
+                "step_49999",
+            )
+        )
         mlps = []
         for agent in agents:
             mlp = self.train_classifier(agent)
