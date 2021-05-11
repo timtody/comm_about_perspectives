@@ -92,7 +92,7 @@ class TidyWriter:
             self._write()
 
     def __repr__(self) -> str:
-        return "TidyReader"
+        return f"TidyWriter<path={self.path} max_q_len={self.max_queue_len}>"
 
 
 class MultiProcessingWriter(TidyWriter):

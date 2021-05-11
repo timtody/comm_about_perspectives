@@ -30,7 +30,7 @@ def merge_cfg_with_cli(cfg: NamedTuple, parser: ArgumentParser = None):
     parser = parser if parser is not None else argparse.ArgumentParser()
     for field, dtype in get_type_hints(cfg).items():
         if dtype is bool:
-           parser.add_argument(f"--{field}", action="store_true")
+            parser.add_argument(f"--{field}", action="store_true")
         else:
             if field in cfg._field_defaults.keys():
                 parser.add_argument(
@@ -44,27 +44,6 @@ def merge_cfg_with_cli(cfg: NamedTuple, parser: ArgumentParser = None):
                     type=dtype,
                     required=True,
                 )
-    # for field in cfg._fields:
-    #     print(field)
-    #     print(cfg)
-    #     print("Type", get_type_hints(field))
-    #     print(cfg.__getattribute__(field))
-        
-    #     if isinstance(cfg.__getattribute__(field), bool):
-    #         parser.add_argument(f"--{field}", action="store_true")
-    #     else:
-    #         if field in cfg._field_defaults.keys():
-    #             parser.add_argument(
-    #                 f"--{field}",
-    #                 type=type(cfg.__getattribute__(field)),
-    #                 default=cfg.__getattribute__(field),
-    #             )
-    #         else:
-    #             parser.add_argument(
-    #                 f"--{field}",
-    #                 type=type(cfg.__getattribute__(field)),
-    #                 required=True,
-    #             )
     return parser
 
 

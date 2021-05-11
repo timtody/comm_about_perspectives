@@ -104,21 +104,18 @@ class Experiment(BaseExperiment):
         msa_loss_b = F.mse_loss(rec_ba, batch_b)
 
         # decoding space adaptation
-        # NOTE: we might NOT want to detach here, discuss with Clem
+        # NOTE: we might or might not want to detach rec_aa/rec_bb, discuss with Clem
         dsa_loss_a = F.mse_loss(rec_ab, rec_aa)
         dsa_loss_b = F.mse_loss(rec_ba, rec_bb)
 
         with torch.no_grad():
             # compute mean batch var per feature
             # TODO: probably compute running average here.
-            mbvar_a = msg_a.var(dim=0).mean()
-            mbvar_b = msg_b.var(dim=0).mean()
+            mbvar_a = msg_a.var(dim=0).mean().item()
+            mbvar_b = msg_b.var(dim=0).mean().item()
 
             # compute difference between the decodings. Should decrease if agents abstract
             dec_diff_a = dec_diff_b = F.mse_loss(rec_aa, rec_bb)
-
-        ab_name = agent_a.name + agent_b.name
-        ba_name = agent_b.name + agent_a.name
 
         total_loss_a: Tensor = (
             self.cfg.eta_ae * ae_loss_a
@@ -139,6 +136,9 @@ class Experiment(BaseExperiment):
         total_loss_b.backward()
         agent_a.opt.step()
         agent_b.opt.step()
+
+        ab_name = agent_a.name + agent_b.name
+        ba_name = agent_b.name + agent_a.name
 
         if step % 50 == 0:
             self.tb.add_scalar(f"AEloss{ab_name}", ae_loss_a, step)
@@ -163,9 +163,9 @@ class Experiment(BaseExperiment):
                     (lsa_loss_a.item(), "LSA", agent_a.name, agent_b.name),
                     (msa_loss_a.item(), "MSA", agent_a.name, agent_b.name),
                     (dsa_loss_a.item(), "DSA", agent_a.name, agent_b.name),
-                    (mbvar_a.item(), "MBVAR", agent_a.name, agent_b.name),
+                    (mbvar_a, "MBVAR", agent_a.name, agent_b.name),
                     (
-                        lsa_loss_a.item() / (mbvar_a.item() + eps),
+                        lsa_loss_a.item() / (mbvar_a + eps),
                         "LSA-MBVAR",
                         agent_a.name,
                         agent_b.name,
@@ -205,7 +205,7 @@ class Experiment(BaseExperiment):
         agent.opt.zero_grad()
         loss.backward()
         agent.opt.step()
-        if step % 100 == 0:
+        if step % 50 == 0:
             self.tb.add_scalar("ae_loss_control", loss.item(), step)
             self.writer.add((loss.item(), "AE", agent.name, ""), step=step, tag="loss")
 

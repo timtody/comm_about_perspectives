@@ -1,0 +1,16 @@
+#!/bin/bash
+#SBATCH --job-name=results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18/sigma:0-eta_lsa:1-eta_msa:0-eta_dsa:0-eta_ae:0--rank_0
+#SBATCH -C v100-16g
+#(use '-C v100-32g' for 32 GB GPUs only)
+#SBATCH -A imi@gpu
+#SBATCH --output=results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18/sigma:0-eta_lsa:1-eta_msa:0-eta_dsa:0-eta_ae:0-/out
+#SBATCH --error=results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18/sigma:0-eta_lsa:1-eta_msa:0-eta_dsa:0-eta_ae:0-/err
+#SBATCH --time=20:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=2
+module purge
+module load python/3.8.2
+set -x
+srun python run_exp.py --rank 0 --path results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18/sigma:0-eta_lsa:1-eta_msa:0-eta_dsa:0-eta_ae:0- 

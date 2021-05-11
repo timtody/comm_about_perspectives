@@ -52,7 +52,6 @@ class Experiment(BaseExperiment):
         for agent in agents:
             mlp = self.train_classifier(agent)
             mlps.append(mlp)
-
         self.compute_cross_agent_cls(agents, mlps)
 
     def load_aes(self, path: str) -> List[AutoEncoder]:
@@ -109,11 +108,15 @@ class Experiment(BaseExperiment):
         for i, (ae, mlp) in enumerate(zip(aes, mlps[rot:] + mlps[:rot])):
             latent = ae.encode(X)
             acc = mlp.compute_acc(latent, y)
-            self.writer.add((tag, acc), step=i)
+            self.writer.add((tag, acc), step=i, tag="cross_agent_cls")
 
     def load_data(reader: TidyReader) -> Any:
         return reader.read(columns=["Rank", "Step", "Agent", "Accuracy"])
 
     def plot(df: DataFrame, plot_path: str) -> None:
+        df.to_csv(plot_path + "/data.csv")
         sns.barplot(data=df, x="Agent", y="Accuracy")
-        plt.show()
+        plt_name = f"{plot_path}/cross_agent_pred_acc_latent"
+        plt.savefig(plt_name + ".svg")
+        plt.savefig(plt_name + ".pdf")
+        plt.savefig(plt_name + ".png")

@@ -1,28 +1,28 @@
+import itertools
 import os
 import string
-import itertools
 from pathlib import Path, PosixPath
-from typing import Any, Callable, List, Tuple, Dict
+from typing import Any, Callable, Dict, List, Tuple
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-from pandas.core.frame import DataFrame
 import seaborn as sns
 import torch
 import torch.nn.functional as F
+from pandas.core.frame import DataFrame
 from sklearn.linear_model import LinearRegression
 from sklearn.manifold import TSNE
-from torch.tensor import Tensor
 from torch.types import Number
 
 from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
 
-
 EPOCH = 49999.0
-sns.set(style="whitegrid")
+DATA_LEN = 333
+# sns.set(style="whitegrid")
 
 
 def load_df_and_params(
@@ -158,6 +158,31 @@ def load_data_raw(path):
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
+        if i > DATA_LEN:
+            break
+    return pd.concat(dfs)
+
+
+def load_loss_data(path, threshold=2000):
+    paths = Path(path).glob("*")
+    dfs = []
+    i = 0
+    for path in paths:
+        i += 1
+        df, params = load_df_and_params(
+            path,
+            "loss",
+            ["Step", "Rank", "Loss", "Type", "Agent_i", "Agent_j"],
+        )
+        groups = df.groupby(["Type", "Agent_i"], as_index=False)
+        df = groups.apply(
+            lambda x: x[x["Step"] >= 45000].drop(axis=1, labels="Agent_j").mean()
+        )
+        for param, value in params.items():
+            df[param] = value
+        dfs.append(df)
+        if i > DATA_LEN:
+            break
     return pd.concat(dfs)
 
 
@@ -312,7 +337,11 @@ def _generate_tsne_relplot(results, path_to_plot):
 
 
 def plot_img_reconstructions(
-    root_path: str, name_of_best_exp: str, path_to_plot: str, baseline: bool = False
+    root_path: str,
+    name_of_best_exp: str,
+    path_to_plot: str,
+    baseline: bool = False,
+    epoch: int = 49999,
 ):
     dataset = MNISTDataset()
     ae = AutoEncoder(30, False, False, 0.001, "test")
@@ -321,14 +350,14 @@ def plot_img_reconstructions(
             os.path.join(
                 root_path,
                 name_of_best_exp,
-                f"params/step_{int(EPOCH)}/rank_0/{'A' if not baseline else 'baseline'}.pt",
+                f"params/step_{epoch}/rank_0/{'A' if not baseline else 'baseline'}.pt",
             ),
             map_location=torch.device("cpu"),
         )
     )
     digits: torch.Tensor = dataset.sample(50)
 
-    fig, axes = plt.subplots(
+    _, axes = plt.subplots(
         nrows=10,
         ncols=10,
         figsize=(10, 8),
@@ -344,7 +373,8 @@ def plot_img_reconstructions(
         rec = ae(digit.reshape(1, 1, 28, 28))
         ax_column[1].imshow(rec.squeeze().detach())
         ax_column[1].set_axis_off()
-
+    plt.show()
+    exit(1)
     plt_path = f"plots/{path_to_plot}/reconstructions_baseline_{baseline}"
     plt.savefig(plt_path + ".pdf")
     plt.savefig(plt_path + ".svg")
@@ -378,46 +408,122 @@ def plot_reconstruction_sim_measure(
     plt.close()
 
 
-def compute_and_save_cov_matrix():
-    pass
+def compute_and_save_cov_matrix(
+    df: DataFrame, df_acc: DataFrame, hparams: List, path: str, agent="baseline"
+) -> None:
+    plt_base_path = f"plots/{'/'.join(path.split('/')[-2:])}"
+    if not os.path.exists(plt_base_path):
+        os.makedirs(plt_base_path)
 
+    if agent == "baseline":
+        df = df[df["Agent_i"] == "baseline"]
+        df_acc = df_acc[df_acc["Agent"] == "baseline"]
+    elif agent == "ma":
+        df = df[df["Agent_i"] != "baseline"]
+        df_acc = df_acc[df_acc["Agent"] != "baseline"]
+    else:
+        raise Exception("Wrong agent type.")
 
-def make_plots(path_to_results: str, hparams: List[str], path_to_plot: str):
-    if not os.path.exists("plots/" + path_to_plot):
-        os.makedirs("plots/" + path_to_plot)
+    df = df.groupby(["Type", *hparams], as_index=False).mean()
+    df_acc = df_acc.groupby(hparams, as_index=False).mean()
+    pivot_table = df.pivot(index=[*hparams], columns=["Type"], values="Loss")
+    pivot_table = pivot_table.reset_index()
 
-    df = load_data_raw(path_to_results)
+    pivot_table["Accuracy"] = df_acc.Value
+    pivot_table = pivot_table[pivot_table.columns].apply(pd.to_numeric)
+    pivot_table.to_csv(f"{plt_base_path}/{agent}.csv")
 
-    compute_plots_latent(df, hparams, path_to_plot)
-    compute_plots_rec(df, hparams, path_to_plot)
+    # reorder the columns to make display prettier
+    pivot_table = pivot_table[
+        [
+            "eta_ae",
+            "eta_lsa",
+            "eta_dsa",
+            "eta_msa",
+            "sigma",
+            "Accuracy",
+            "AE",
+            "LSA",
+            "DSA",
+            "MSA",
+            "DECDIFF",
+            "MBVAR",
+            "LSA-MBVAR",
+        ]
+    ]
+    pivot_table.rename(columns={"LSA-MBVAR": "LSA/MBVAR"}, inplace=True)
 
-    name_of_best_exp = (
-        "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
+    corr = pivot_table.corr()
+    corr.to_csv(f"{plt_base_path}/{agent}_corr.csv")
+    mask = np.triu(np.ones_like(corr, dtype=bool))
+
+    # Set up the matplotlib figure
+    plt.subplots(figsize=(11, 9))
+
+    # Generate a custom diverging colormap
+    cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+    # Draw the heatmap with the mask and correct aspect ratio
+    sns.heatmap(
+        corr,
+        mask=mask,
+        cmap=cmap,
+        center=0,
+        square=True,
+        linewidths=0.5,
+        cbar_kws=dict(shrink=0.5),
+        annot=True,
+        # annot_kws=dict(rotation=45),
     )
+    plt.yticks(rotation=0)
+    plt.xticks(rotation=90)
+    plt.tight_layout()
 
-    # t-sne in latent space
-    plot_tsne(
-        os.path.join(
-            path_to_results, name_of_best_exp, f"params/step_{int(EPOCH)}/rank_0"
-        ),
-        path_to_plot,
-    )
+    plt.savefig(plt_base_path + f"/{agent}.pdf")
+    plt.savefig(plt_base_path + f"/{agent}.svg")
+    plt.savefig(plt_base_path + f"/{agent}.png")
 
-    # reconstruction from good marl agents vs. baseline agents for some digits
-    plot_img_reconstructions(
-        path_to_results, name_of_best_exp, path_to_plot, baseline=False
-    )
-    plot_img_reconstructions(
-        path_to_results, name_of_best_exp, path_to_plot, baseline=True
-    )
-    plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
-    # covariance matric between hparams and losses (final?)
-    compute_and_save_cov_matrix()
+def main(path_to_results: str, hparams: List[str], path_to_plot: str):
+    # if not os.path.exists("plots/" + path_to_plot):
+    #     os.makedirs("plots/" + path_to_plot)
+
+    df_loss = load_loss_data(path_to_results)
+    df_acc = load_data_raw(path_to_results)
+    df_acc = df_acc[df_acc["Epoch"] == EPOCH]
+    df_acc = df_acc[df_acc["Type"] == "Latent"]
+    # compute_plots_latent(df, hparams, path_to_plot)
+    # compute_plots_rec(df, hparams, path_to_plot)
+    # name_of_best_exp = (
+    #     "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
+    # )
+
+    # # t-sne in latent space
+    # plot_tsne(
+    #     os.path.join(
+    #         path_to_results, name_of_best_exp, f"params/step_{int(EPOCH)}/rank_0"
+    #     ),
+    #     path_to_plot,
+    # )
+
+    # # reconstruction from good marl agents vs. baseline agents for some digits
+    # plot_img_reconstructions(
+    #     path_to_results, name_of_best_exp, path_to_plot, baseline=False
+    # )
+    # plot_img_reconstructions(
+    #     path_to_results, name_of_best_exp, path_to_plot, baseline=True
+    # )
+    # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
+
+    # # covariance matric between hparams and losses (final?)
+    compute_and_save_cov_matrix(df_loss, df_acc, hparams, path_to_results, agent="ma")
+    # compute_and_save_cov_matrix(
+    #    df_loss, df_acc, hparams, path_to_results, agent="baseline"
+    # )
 
 
 if __name__ == "__main__":
-    make_plots(
+    main(
         "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18",
         ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
         "100-draws-fixed-high-lsa",
