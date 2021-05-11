@@ -11,10 +11,10 @@ PATH = os.path.join(os.path.expandvars("$SCRATCH"), PATH)
 
 
 class Config(BaseConfig):
-    path: str
-    nsteps: int
-    bsize: int
-    eval_bsize: int
+    path: str = ""
+    nsteps: int = 0
+    bsize: int = 0
+    eval_bsize: int = 0
 
 
 class RunnerCfg(NamedTuple):
@@ -32,7 +32,9 @@ exp_paths = pathlib.Path(PATH).glob("*")
 runner_cfg = RunnerCfg()
 
 for path in exp_paths:
-    cfg = Config(path, 2500, 2048, 8192, nogpu=False, nprocs=5)
+    cfg = Config(
+        path=path, nsteps=2500, bize=2048, eval_bsize=8192, nogpu=False, nprocs=5
+    )
     for rank in range(runner_cfg.nprocs):
         run_single_from_sweep_slurm(
             cfg, runner_cfg, path, rank, str(path) + f"-rank_{rank}"
