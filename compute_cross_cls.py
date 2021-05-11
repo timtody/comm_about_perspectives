@@ -10,12 +10,12 @@ PATH = os.path.join(os.path.expandvars("$SCRATCH"), PATH)
 
 class Config(NamedTuple):
     nogpu: bool = False
-    nprocs: int = 0
+    nprocs: int = 5
     seed: int = 123
     ngpus: int = 1
-    nsteps: int = 0
-    bsize: int = 0
-    eval_bsize: int = 0
+    nsteps: int = 2500
+    bsize: int = 2048
+    eval_bsize: int = 8192
 
 
 class RunnerCfg(NamedTuple):
