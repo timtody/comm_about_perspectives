@@ -11,6 +11,7 @@ from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
 from pandas.core.frame import DataFrame
+from torch.utils.tensorboard import SummaryWriter
 
 from experiments.experiment import BaseConfig, BaseExperiment
 
@@ -46,6 +47,9 @@ class Config(BaseConfig):
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
+        tb_path = f"{self.path}/tb/{self.rank}"
+        self.tb = SummaryWriter(tb_path)
+
         self.dataset = MNISTDataset()
         agents = self.load_aes(cfg.path)
         mlps = []
