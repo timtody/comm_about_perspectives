@@ -96,7 +96,7 @@ class Experiment(BaseExperiment):
         return autoencoders + baselines
 
     def train_classifier(self, agent: AutoEncoder):
-        mlp = MLP(30)
+        mlp = MLP(30).to(self.dev)
 
         for i in range(int(self.cfg.nsteps)):
             X, y = map(
