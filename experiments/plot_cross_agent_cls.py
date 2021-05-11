@@ -51,7 +51,7 @@ class Experiment(BaseExperiment):
         self.tb = SummaryWriter(tb_path)
 
         self.dataset = MNISTDataset()
-        agents = self.load_aes(cfg.path)
+        agents = self.load_aes(self.path)
         mlps = []
         for agent in agents:
             mlp = self.train_classifier(agent)
