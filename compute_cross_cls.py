@@ -27,7 +27,7 @@ class RunnerCfg(NamedTuple):
     gb: int = 16  # 16 or 32
     nnodes: int = 1
     ntasks: int = 1
-    time: str = "20:00:00"
+    time: str = "5:00:00"
     cpus_per_task: int = 2
     nprocs: int = 5
 
