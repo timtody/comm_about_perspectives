@@ -2,8 +2,6 @@ import os
 import subprocess
 from typing import NamedTuple
 
-from torch.nn.modules.module import T
-
 
 def unpack_args(**kwargs):
     flags = ""
@@ -41,6 +39,7 @@ def run_single_from_sweep_slurm(cfg: NamedTuple, runner_args, path, rank, jobnam
         f"set -x\n"
         f"srun python run_exp.py --rank {rank} --path {path} {unpack_args(**cfg._asdict())}\n"
     )
+    os.chdir(os.path.expandvars("$SCRATCH"))
     with open("tmp", "w") as f:
         f.writelines(sbatch_file)
     print("Sending it off..")
