@@ -70,8 +70,12 @@ class Experiment(BaseExperiment):
             AutoEncoder(30, bnorm=False, affine=False, name=name, lr=0.001)
             for name in string.ascii_uppercase[:3]
         ]
-        base1 = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
-        base2 = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
+        base1 = AutoEncoder(
+            30, bnorm=False, affine=False, name="baseline", lr=0.001
+        ).to(self.dev)
+        base2 = AutoEncoder(
+            30, bnorm=False, affine=False, name="baseline", lr=0.001
+        ).to(self.dev)
         baselines = [base1, base2]
         print(self.dev)
 
