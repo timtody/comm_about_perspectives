@@ -2,8 +2,6 @@ import os
 import pathlib
 from typing import NamedTuple
 
-from experiments.experiment import BaseConfig
-from experiments.plot_cross_agent_cls import Experiment
 from slurm_runner_cross_agent import run_single_from_sweep_slurm
 
 PATH = "results/sweeps/shared_ref_mnist/2021-04-20/14-58-18"
@@ -32,12 +30,13 @@ class RunnerCfg(NamedTuple):
     nprocs: int = 5
 
 
-exp_paths = pathlib.Path(PATH).glob("*")
-runner_cfg = RunnerCfg()
+if __name__ == "__main__":
+    exp_paths = pathlib.Path(PATH).glob("*")
+    runner_cfg = RunnerCfg()
 
-for path in exp_paths:
-    cfg = Config(
-        path=path, nsteps=2500, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5
-    )
-    for rank in range(runner_cfg.nprocs):
-        run_single_from_sweep_slurm(cfg, runner_cfg, path, rank, "cooljob")
+    for path in exp_paths:
+        cfg = Config(
+            path=path, nsteps=2500, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5
+        )
+        for rank in range(runner_cfg.nprocs):
+            run_single_from_sweep_slurm(cfg, runner_cfg, path, rank, "cooljob")

@@ -1,6 +1,5 @@
 import argparse
 
-from numpy import exp
 from chunked_writer import MultiProcessingWriter
 from compute_cross_cls import Config
 from experiments.plot_cross_agent_cls import Experiment
