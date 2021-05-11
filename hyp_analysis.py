@@ -91,7 +91,7 @@ def plot_pcoords(df, labels, tag, path_to_plot):
     ax.set_xlim((0, 1))
     ax.set_xticklabels([labels[-2], labels[-1]])
     plt.subplots_adjust(wspace=0)
-    plt.savefig(f"plots/{path_to_plot}/pcoords_{tag}.pdf")
+    plt.savefig(f"{path_to_plot}/pcoords_{tag}.pdf")
     plt.close()
 
 
@@ -197,7 +197,7 @@ def compute_and_save_reg_coefs(df, hparams, tag, path_to_plot):
 
     # write to latex before regressing
     # this contains a table of all parameters
-    with open(f"plots/{path_to_plot}/{tag}_table_view.txt", "w") as f:
+    with open(f"{path_to_plot}/{tag}_table_view.txt", "w") as f:
         f.writelines(
             groups.drop(["Epoch", "Rank", "Step"], axis=1)
             .sort_values(by="Value", ascending=False)
@@ -208,7 +208,7 @@ def compute_and_save_reg_coefs(df, hparams, tag, path_to_plot):
     coefs = compute_reg_coefs(X, y)
     columns = list(map(lambda x: f"beta_{x}", hparams))
     df_coefs = pd.DataFrame((coefs,), columns=columns)
-    df_coefs.to_csv(f"plots/{path_to_plot}/{'-'.join(hparams)}_params_{tag}.csv")
+    df_coefs.to_csv(f"{path_to_plot}/{'-'.join(hparams)}_params_{tag}.csv")
 
 
 def compute_barplots(df, hparams, tag, path_to_plot):
@@ -224,7 +224,7 @@ def compute_barplots(df, hparams, tag, path_to_plot):
             data=df, kind="bar", col="params", x="Agent", y="Value", col_wrap=3
         )
         g.set_titles("{col_name}")
-        plt.savefig(f"plots/{path_to_plot}/bar_{tag}.pdf")
+        plt.savefig(f"{path_to_plot}/bar_{tag}.pdf")
     else:
         print("Arsch")
     plt.close()
@@ -242,21 +242,21 @@ def compute_best_vs_base(
     df = get_best_params(df, 1.0, hparams)
 
     # compute difference between best agent
-    applf_fn: Callable = lambda x: x.assign(
+    apply_fn: Callable = lambda x: x.assign(
         max_diff=x[x.Agent != "baseline"].groupby("Agent").mean().Value.max()
         - x[x.Agent == "baseline"].Value
     )
-    trans = df.groupby([*hparams, "Epoch"], as_index=False).apply(applf_fn)
+    trans = df.groupby([*hparams, "Epoch"], as_index=False).apply(apply_fn)
     trans = trans[trans.Agent == "baseline"]
     trans = trans[trans.Epoch == EPOCH]
-    trans = trans.loc[
-        :, ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma", "Epoch", "max_diff"]
-    ].sort_values(by="max_diff", axis=0, ascending=False)
+    trans = trans.loc[:, [*hparams, "Epoch", "max_diff"]].sort_values(
+        by="max_diff", axis=0, ascending=False
+    )
 
     plt.bar(["Best", "Mean"], [trans.max_diff.iloc[0], trans.max_diff.mean()])
     plt.annotate(str(round(trans.max_diff.iloc[0], 2)), (0, trans.max_diff.iloc[0]))
     plt.annotate(str(round(trans.max_diff.mean(), 2)), (1, trans.max_diff.mean()))
-    plt.savefig(f"plots/{path_to_plot}/best_vs_base_{tag}.pdf")
+    plt.savefig(f"{path_to_plot}/best_vs_base_{tag}.pdf")
     plt.close()
 
 
@@ -436,10 +436,7 @@ def compute_and_save_cov_matrix(
     # reorder the columns to make display prettier
     pivot_table = pivot_table[
         [
-            "eta_ae",
-            "eta_lsa",
             "eta_dsa",
-            "eta_msa",
             "sigma",
             "Accuracy",
             "AE",
@@ -487,13 +484,16 @@ def compute_and_save_cov_matrix(
 def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # if not os.path.exists("plots/" + path_to_plot):
     #     os.makedirs("plots/" + path_to_plot)
+    path = f"plots/{'/'.join(path_to_results.split('/')[-2:])}"
 
-    df_loss = load_loss_data(path_to_results)
+    # df_loss = load_loss_data(path_to_results)
+    # df_acc = load_data_raw(path_to_results)
+    # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
+    # df_acc = df_acc[df_acc["Type"] == "Latent"]
+
     df_acc = load_data_raw(path_to_results)
-    df_acc = df_acc[df_acc["Epoch"] == EPOCH]
-    df_acc = df_acc[df_acc["Type"] == "Latent"]
-    # compute_plots_latent(df, hparams, path_to_plot)
-    # compute_plots_rec(df, hparams, path_to_plot)
+    compute_plots_latent(df_acc, hparams, path)
+    compute_plots_rec(df_acc, hparams, path)
     # name_of_best_exp = (
     #     "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
     # )
@@ -516,7 +516,7 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
     # # covariance matric between hparams and losses (final?)
-    compute_and_save_cov_matrix(df_loss, df_acc, hparams, path_to_results, agent="ma")
+    # compute_and_save_cov_matrix(df_loss, df_acc, hparams, path_to_results, agent="ma")
     # compute_and_save_cov_matrix(
     #    df_loss, df_acc, hparams, path_to_results, agent="baseline"
     # )
@@ -524,7 +524,7 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18",
-        ["eta_ae", "eta_lsa", "eta_dsa", "eta_msa", "sigma"],
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-26/10-46-54",
+        ["eta_dsa", "sigma"],
         "100-draws-fixed-high-lsa",
     )
