@@ -109,6 +109,7 @@ class Experiment(BaseExperiment):
         ma_aes, ma_mlps = agents[:3], mlps[:3]
         sa_aes, sa_mlps = agents[3:], mlps[3:]
 
+        print(int(self.cfg.bsize))
         X, y = map(
             lambda x: x.to(self.dev),
             self.dataset.sample_with_label(int(self.cfg.bsize)),
