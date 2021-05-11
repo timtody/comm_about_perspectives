@@ -19,7 +19,7 @@ def set_seeds(rank):
 
 def get_device(gpu=False, rank: int = 0, ngpus: int = 1):
     return (
-        torch.device(f"cuda:{rank % ngpus}")
+        torch.device(f"cuda:{int(rank) % int(ngpus)}")
         if gpu and torch.cuda.is_available()
         else torch.device("cpu")
     )
