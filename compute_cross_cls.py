@@ -10,7 +10,11 @@ PATH = "results/sweeps/shared_ref_mnist/2021-04-20/14-58-18"
 PATH = os.path.join(os.path.expandvars("$SCRATCH"), PATH)
 
 
-class Config(BaseConfig):
+class Config(NamedTuple):
+    nogpu: bool = False
+    nprocs: int = 0
+    seed: int = 123
+    ngpus: int = 1
     path: str = ""
     nsteps: int = 0
     bsize: int = 0
