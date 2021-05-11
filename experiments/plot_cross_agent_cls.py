@@ -97,12 +97,15 @@ class Experiment(BaseExperiment):
 
     def train_classifier(self, agent: AutoEncoder):
         mlp = MLP(30).to(self.dev)
+        agent.to(self.dev)
 
         for i in range(int(self.cfg.nsteps)):
             X, y = map(
                 lambda x: x.to(self.dev),
                 self.dataset.sample_with_label(int(self.cfg.bsize)),
             )
+            print(latent)
+            print(agent)
             latent = agent.encode(X)
             mlp.train(latent, y)
             acc = mlp.compute_acc(latent, y)
