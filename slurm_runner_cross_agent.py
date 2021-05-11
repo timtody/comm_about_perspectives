@@ -2,6 +2,8 @@ import os
 import subprocess
 from typing import NamedTuple
 
+from torch.nn.modules.module import T
+
 
 def unpack_args(**kwargs):
     flags = ""
