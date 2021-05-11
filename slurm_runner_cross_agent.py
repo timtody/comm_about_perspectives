@@ -1,5 +1,6 @@
 import os
 import subprocess
+from typing import NamedTuple
 
 
 def unpack_args(**kwargs):
@@ -12,7 +13,7 @@ def unpack_args(**kwargs):
     return flags
 
 
-def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
+def run_single_from_sweep_slurm(cfg: NamedTuple, runner_args, path, rank, jobname):
     # TODO: make experiment configurable from command line s.t. we can pass it on
     # as an argument here
     print("Running SLURM experiment at path:", path)
@@ -35,7 +36,7 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
         f"module purge\n"
         f"module load python/3.8.2\n"
         f"set -x\n"
-        f"srun python run_exp.py --rank {rank} --path {path} {unpack_args(**vars(cfg))}\n"
+        f"srun python run_exp.py --rank {rank} --path {path} {unpack_args(**cfg.as_dict())}\n"
     )
     with open("tmp", "w") as f:
         f.writelines(sbatch_file)
