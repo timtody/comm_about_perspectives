@@ -13,7 +13,7 @@ class Config(NamedTuple):
     nprocs: int = 5
     seed: int = 123
     ngpus: int = 1
-    nsteps: int = 2500
+    nsteps: int = 5000
     bsize: int = 2048
     eval_bsize: int = 8192
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     exp_paths = pathlib.Path(PATH).glob("*")
     runner_cfg = RunnerCfg()
 
-    for path in list(exp_paths)[:1]:
-        cfg = Config(nsteps=2500, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5)
+    for path in exp_paths:
+        cfg = Config(nsteps=5000, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5)
         for rank in range(runner_cfg.nprocs):
-            run_single_from_sweep_slurm(cfg, runner_cfg, path, rank, "cooljob")
+            run_single_from_sweep_slurm(cfg, runner_cfg, path, rank, "fubirella")
