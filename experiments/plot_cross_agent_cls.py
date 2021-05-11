@@ -93,10 +93,10 @@ class Experiment(BaseExperiment):
     def train_classifier(self, agent: AutoEncoder):
         mlp = MLP(30)
 
-        for i in range(self.cfg.nsteps):
+        for i in range(int(self.cfg.nsteps)):
             X, y = map(
                 lambda x: x.to(self.dev),
-                self.dataset.sample_with_label(self.cfg.bsize),
+                self.dataset.sample_with_label(int(self.cfg.bsize)),
             )
             latent = agent.encode(X)
             mlp.train(latent, y)
@@ -111,7 +111,7 @@ class Experiment(BaseExperiment):
 
         X, y = map(
             lambda x: x.to(self.dev),
-            self.dataset.sample_with_label(self.cfg.bsize),
+            self.dataset.sample_with_label(int(self.cfg.bsize)),
         )
         self._compute_cross_acc(X, y, ma_aes, ma_mlps, "MA")
         self._compute_cross_acc(X, y, sa_aes, sa_mlps, "Base")
