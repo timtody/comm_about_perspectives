@@ -111,7 +111,7 @@ class BaseExperiment(ABC):
         return manager.list()
 
     def _set_seeds(self) -> None:
-        set_seeds(self.cfg.seed + self.rank)
+        set_seeds(int(self.cfg.seed) + int(self.rank))
 
     @classmethod
     def experiment_will_mount(cls, manager: mp.Manager):
