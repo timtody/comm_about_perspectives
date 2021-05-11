@@ -70,7 +70,7 @@ class Experiment(BaseExperiment):
         for agent in autoencoders:
             agent.load_state_dict(
                 torch.load(
-                    f"{path}/rank_{self.rank % 5}/{agent.name}.pt",
+                    f"{path}/rank_{int(self.rank) % 5}/{agent.name}.pt",
                     map_location=self.dev,
                 )
             )
