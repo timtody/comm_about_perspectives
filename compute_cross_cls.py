@@ -1,4 +1,5 @@
 import os
+import time
 import pathlib
 from typing import NamedTuple
 
@@ -37,3 +38,4 @@ if __name__ == "__main__":
         cfg = Config(nsteps=5000, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5)
         for rank in range(runner_cfg.nprocs):
             run_single_from_sweep_slurm(cfg, runner_cfg, path, rank, "fubirella")
+            time.sleep(10)
