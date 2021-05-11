@@ -73,6 +73,7 @@ class Experiment(BaseExperiment):
         base1 = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
         base2 = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
         baselines = [base1, base2]
+        print(self.dev)
 
         for agent in autoencoders:
             agent.load_state_dict(
