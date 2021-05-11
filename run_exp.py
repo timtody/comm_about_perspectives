@@ -13,6 +13,7 @@ args = parser.parse_args()
 
 cfg = Config()
 writer = MultiProcessingWriter(args.path, rank=args.rank)
+cfg.path = args.path
 experiment = Experiment(cfg, args.rank, writer, None, args.path)
 experiment.run(cfg)
 experiment.writer.close()
