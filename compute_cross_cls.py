@@ -34,7 +34,7 @@ if __name__ == "__main__":
     exp_paths = pathlib.Path(PATH).glob("*")
     runner_cfg = RunnerCfg()
 
-    for path in list(exp_paths[:1]):
+    for path in list(exp_paths)[:1]:
         cfg = Config(
             path=path, nsteps=2500, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5
         )
