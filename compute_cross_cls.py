@@ -37,7 +37,7 @@ runner_cfg = RunnerCfg()
 
 for path in exp_paths:
     cfg = Config(
-        path=path, nsteps=2500, bize=2048, eval_bsize=8192, nogpu=False, nprocs=5
+        path=path, nsteps=2500, bsize=2048, eval_bsize=8192, nogpu=False, nprocs=5
     )
     for rank in range(runner_cfg.nprocs):
         run_single_from_sweep_slurm(
