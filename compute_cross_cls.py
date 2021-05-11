@@ -28,9 +28,7 @@ class RunnerCfg(NamedTuple):
     nprocs: int = 5
 
 
-print(PATH)
 exp_paths = pathlib.Path(PATH).glob("*")
-print(list(exp_paths))
 runner_cfg = RunnerCfg()
 
 for path in exp_paths:
