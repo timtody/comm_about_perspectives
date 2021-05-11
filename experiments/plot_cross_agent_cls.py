@@ -64,6 +64,7 @@ class Experiment(BaseExperiment):
             mlp = self.train_classifier(agent)
             mlps.append(mlp)
         self.compute_cross_agent_cls(agents, mlps)
+        print("Done!")
 
     def load_aes(self, path: str) -> List[AutoEncoder]:
         autoencoders = [
@@ -104,12 +105,10 @@ class Experiment(BaseExperiment):
                 lambda x: x.to(self.dev),
                 self.dataset.sample_with_label(int(self.cfg.bsize)),
             )
-            print(X)
-            print(agent)
             latent = agent.encode(X)
             mlp.train(latent, y)
             acc = mlp.compute_acc(latent, y)
-            self.tb.add_scalar("Accuracy", acc, global_step=i)
+            self.tb.add_scalar("Accuracy-Post", acc, global_step=i)
             # self.writer.add((acc.item(), agent.name), step=i)
         return mlp
 
@@ -130,7 +129,7 @@ class Experiment(BaseExperiment):
             latent = ae.encode(X)
             acc = mlp.compute_acc(latent, y)
             self.writer.add((tag, acc), step=i, tag="cross_agent_cls")
-            self.tb.add_scalar(tag, acc)
+            self.tb.add_scalar(f"cross_agent_acc_{tag}", acc)
 
     def load_data(reader: TidyReader) -> Any:
         return reader.read(columns=["Rank", "Step", "Agent", "Accuracy"])
