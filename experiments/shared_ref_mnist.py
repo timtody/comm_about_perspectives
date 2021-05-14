@@ -57,7 +57,8 @@ class Config(NamedTuple):
 class Experiment(BaseExperiment):
     def log(self, step: int, agents):
         mlps = self.predict_from_latent_and_reconstruction(agents, step)
-        self.compute_cross_acc(agents, mlps, step)
+        # add base_2 here to have 2 agents for swapping in the base case
+        self.compute_cross_acc(agents + [self.base_2], mlps, step)
         self.save_params(step, agents)
         self.writer._write()
 
@@ -88,6 +89,7 @@ class Experiment(BaseExperiment):
         self.tb = SummaryWriter(tb_path)
 
         base = self.generate_autoencoder("baseline")
+        self.base_2 = self.generate_autoencoder("baseline_2")
         agents = [
             self.generate_autoencoder(f"{i}")
             for i in string.ascii_uppercase[: cfg.nagents]
@@ -108,6 +110,7 @@ class Experiment(BaseExperiment):
                 self.sync_ae_step(i, agent_a, agent_b)
                 if agent_a.name == "A" or agent_b.name == "A":
                     self.control_step(i, base)
+                    self.control_step(i, self.base_2)
 
             if i % cfg.logfreq == cfg.logfreq - 1:
                 self.log(i, agents_and_base)
