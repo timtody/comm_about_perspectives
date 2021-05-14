@@ -3,8 +3,7 @@ import importlib
 import os
 import sys
 
-from functions import (create_exp_name_and_datetime_path, merge_cfg_with_cli,
-                       run)
+from functions import create_exp_name_and_datetime_path, merge_cfg_with_cli, run
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

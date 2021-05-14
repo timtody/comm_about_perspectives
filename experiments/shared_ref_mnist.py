@@ -20,12 +20,66 @@ from experiments.experiment import BaseExperiment
 
 eps = 0.0001
 
+# TODO: make this config modular!
+class Config(NamedTuple):
+    # experiement params
+    seed: int = 123
+    nprocs: int = 1
+    nogpu: bool = False
+    logfreq: int = 50
+    nsteps: int = 200
+    nagents: int = 3
+    ngpus: int = 1
+
+    # nets
+    latent_dim: int = 30
+    lr: float = 0.001
+    bsize: int = 32
+
+    # bnorm
+    bnorm: bool = False
+    affine: bool = False
+
+    # channel noise
+    sigma: float = 0.0
+
+    # hyperparameters
+    eta_ae: float = 0.0
+    eta_lsa: float = 0.0
+    eta_msa: float = 0.0
+    eta_dsa: float = 0.0
+
+    # assessment of abstraction
+    nsteps_pred_latent: int = 50
+    bsize_pred_latent: int = 32
+
 
 class Experiment(BaseExperiment):
     def log(self, step: int, agents):
-        self.predict_from_latent_and_reconstruction(agents, step)
+        mlps = self.predict_from_latent_and_reconstruction(agents, step)
+        self.compute_cross_acc(agents, mlps, step)
         self.save_params(step, agents)
         self.writer._write()
+
+    def compute_cross_acc(
+        self, agents: "list[AutoEncoder]", mlps: "list[MLP]", step: int
+    ):
+        ma_aes, ma_mlps = agents[:3], mlps[:3]
+        sa_aes, sa_mlps = agents[3:], mlps[3:]
+
+        X, y = map(
+            lambda x: x.to(self.dev),
+            self.dataset.sample_with_label(int(self.cfg.bsize)),
+        )
+        self._compute_cross_acc(X, y, ma_aes, ma_mlps, "MA", step)
+        self._compute_cross_acc(X, y, sa_aes, sa_mlps, "Base", step)
+
+    def _compute_cross_acc(self, X, y, aes, mlps, tag, step, rot=1):
+        for i, (ae, mlp) in enumerate(zip(aes, mlps[rot:] + mlps[:rot])):
+            latent = ae.encode(X)
+            acc = mlp.compute_acc(latent, y)
+            self.writer.add((step, tag, acc), step=i, tag="cross_agent_acc")
+            self.tb.add_scalar(f"cross_agent_acc_{tag}_step{step}", acc)
 
     def run(self, cfg: NamedTuple):
         self.dataset = MNISTDataset()
@@ -174,9 +228,9 @@ class Experiment(BaseExperiment):
                     (lsa_loss_b.item(), "LSA", agent_b.name, agent_a.name),
                     (msa_loss_b.item(), "MSA", agent_b.name, agent_a.name),
                     (dsa_loss_b.item(), "DSA", agent_b.name, agent_a.name),
-                    (mbvar_b.item(), "MBVAR", agent_b.name, agent_a.name),
+                    (mbvar_b, "MBVAR", agent_b.name, agent_a.name),
                     (
-                        lsa_loss_b.item() / (mbvar_b.item() + eps),
+                        lsa_loss_b.item() / (mbvar_b + eps),
                         "LSA-MBVAR",
                         agent_b.name,
                         agent_a.name,
@@ -212,9 +266,11 @@ class Experiment(BaseExperiment):
     def predict_from_latent_and_reconstruction(
         self, agents: List[AutoEncoder], step: int
     ) -> None:
+        mlps = []
         for agent in agents:
             mlp: MLP = MLP(self.cfg.latent_dim).to(self.dev)
             mlp_rec: CNN = CNN().to(self.dev)
+
             for i in range(self.cfg.nsteps_pred_latent):
                 ims, labels = map(
                     lambda x: x.to(self.dev),
@@ -247,6 +303,8 @@ class Experiment(BaseExperiment):
                         step=step,
                         tag="pred_from_latent",
                     )
+            mlps.append(mlp)
+        return mlps
 
     @staticmethod
     def load_data(reader: TidyReader):
