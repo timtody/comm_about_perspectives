@@ -1,5 +1,6 @@
 import multiprocessing
 import os
+import time
 from argparse import ArgumentParser
 from typing import NamedTuple
 
@@ -12,19 +13,20 @@ from functions import (
     run_single_from_sweep_mp,
 )
 from slurm_runner import run_single_from_sweep_slurm
+from sweeper import Sweeper
 
 
 # TODO: make this config modular!
 class Config(NamedTuple):
     # experiement params
     seed: int = 123
-    nprocs: int = 1
+    nprocs: int = 3
     nogpu: bool = False
-    logfreq: int = 1000
+    logfreq: int = 5000
     nsteps: int = 50001
     nagents: int = 3
     ngpus: int = 1
-    mp_method: str = "mp"
+    mp_method: str = "slurm"
     # for future specifying exp from clargs
     # experiment: str = ""
 
@@ -35,7 +37,7 @@ class Config(NamedTuple):
     # nets
     latent_dim: int = 30
     lr: float = 0.001
-    bsize: int = 128
+    bsize: int = 4096
 
     # bnorm
     bnorm: bool = False
@@ -51,8 +53,8 @@ class Config(NamedTuple):
     eta_dsa: float = 0.0
 
     # assessment of abstraction
-    nsteps_pred_latent: int = 2000
-    bsize_pred_latent: int = 128
+    nsteps_pred_latent: int = 5000
+    bsize_pred_latent: int = 4096
 
 
 class RunnerCfg(NamedTuple):
@@ -116,33 +118,33 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
 
-    hparams = ["sigma", "eta_dsa"]
+    hparams = ["sigma", "eta_ae", "eta_msa", "eta_lsa", "eta_dsa"]
 
     sweep_root_path = generate_sweep_path(Experiment)
 
+    # this is specific to the jean-zay cluster
     if args.mp_method == "slurm":
         sweep_root_path = os.path.join(os.path.expandvars("$SCRATCH"), sweep_root_path)
 
     processes = []
-    for i in range(args.nsamples + len(hparams)):
-        if i < len(hparams):
-            for param in hparams:
-                args.__setattr__(param, 1 if hparams.index(param) == i else 0)
-        else:
-            for param in hparams:
-                args.__setattr__(param, round(np.random.rand(), 3))
-        
-        args.eta_ae = round(1 - args.eta_dsa, 3)
+
+    sweeper = Sweeper(hparams, 4, mode="grid")
+    for vars in sweeper.sweep():
+        for var, value in vars:
+            args.__setattr__(var, value)
 
         path: str = generate_run_path(sweep_root_path, args, hparams)
-        print("Starting experiment on path", path)
+        # print("Starting experiment on path", path)
         if args.mp_method == "mp":
             procs = run_single_from_sweep_mp(Experiment, args, path)
             processes += procs
         elif args.mp_method == "slurm":
             for rank in range(args.nprocs):
+                print("Starting SLURM job:", jobname)
                 jobname = generate_tracking_tag(hparams) + "-" + str(rank)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
+            # this is required by the IDRIS administration to keep the throughput of jobs lower
+            time.sleep(5)
         else:
             raise InvalidConfigurationException("Invalid mp method name.")
 
