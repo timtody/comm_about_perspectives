@@ -323,7 +323,7 @@ def _load_aes(path):
     return all_agents
 
 
-def plot_tsne(path, path_to_plot):
+def plot_tsne(path, path_to_plot, tag):
     dataset = MNISTDataset()
     ims, labels = dataset.sample_with_label(5000)
     all_agents = _load_aes(path)
@@ -338,10 +338,10 @@ def plot_tsne(path, path_to_plot):
         for emb, label in zip(embedding, labels):
             results.append((emb[0], emb[1], int(label.item()), ae.name))
 
-    _generate_tsne_relplot(results, path_to_plot)
+    _generate_tsne_relplot(results, path_to_plot, tag)
 
 
-def _generate_tsne_relplot(results, path_to_plot):
+def _generate_tsne_relplot(results, path_to_plot, tag):
     data = pd.DataFrame(results, columns=["x", "y", "cls", "agent"])
     data["cls"] = data.cls.astype("category")
     sns.relplot(
@@ -350,10 +350,11 @@ def _generate_tsne_relplot(results, path_to_plot):
         y="y",
         hue="cls",
         col="agent",
-        facet_kws={"sharex": False, "sharey": False},
+        col_wrap=2,
+        facet_kws={"sharex": True, "sharey": True},
     )
-    plt.savefig(f"plots/{path_to_plot}/t_sne.svg")
-    plt.savefig(f"plots/{path_to_plot}/t_sne.pdf")
+    plt.savefig(f"{path_to_plot}/t_sne_{tag}.svg")
+    plt.savefig(f"{path_to_plot}/t_sne_{tag}.pdf")
     plt.close()
 
 
@@ -541,11 +542,11 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
 
     # compute_cross_accuracy(path_to_results, hparams, path)
 
-    df_loss = load_loss_data(path_to_results)
-    df_acc = load_data_raw(path_to_results)
-    df_acc = df_acc[df_acc["Epoch"] == EPOCH]
-    df_acc = df_acc[df_acc["Type"] == "Latent"]
-    df_cross_acc = load_crs_acc_data(path_to_results)
+    # df_loss = load_loss_data(path_to_results)
+    # df_acc = load_data_raw(path_to_results)
+    # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
+    # df_acc = df_acc[df_acc["Type"] == "Latent"]
+    # df_cross_acc = load_crs_acc_data(path_to_results)
 
     # df_acc = load_data_raw(path_to_results)
     # compute_plots_latent(df_acc, hparams, path)
@@ -554,13 +555,16 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     #     "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
     # )
 
-    # # t-sne in latent space
-    # plot_tsne(
-    #     os.path.join(
-    #         path_to_results, name_of_best_exp, f"params/step_{int(EPOCH)}/rank_0"
-    #     ),
-    #     path_to_plot,
-    # )
+    # t-sne in latent space
+    plot_tsne(
+        os.path.join(
+            path_to_results,
+            "sigma:0.325-eta_dsa:0.974-",
+            f"params/step_{int(EPOCH)}/rank_1",
+        ),
+        path,
+        "sigma:0.325",
+    )
 
     # # reconstruction from good marl agents vs. baseline agents for some digits
     # plot_img_reconstructions(
@@ -572,9 +576,9 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
     # # covariance matric between hparams and losses (final?)
-    compute_and_save_cov_matrix(
-        df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
-    )
+    # compute_and_save_cov_matrix(
+    #     df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
+    # )
     # compute_and_save_cov_matrix(
     #    df_loss, df_acc, hparams, path_to_results, agent="baseline"
     # )
@@ -582,7 +586,7 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18",
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-26/10-46-54",
         ["eta_ae", "eta_msa", "eta_lsa", "eta_dsa", "sigma"],
         "100-draws-fixed-high-lsa",
     )
