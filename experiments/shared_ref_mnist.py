@@ -263,7 +263,7 @@ class Experiment(BaseExperiment):
         loss.backward()
         agent.opt.step()
         if step % 50 == 0:
-            self.tb.add_scalar("ae_loss_control", loss.item(), step)
+            self.tb.add_scalar(f"ae_loss_control_{agent.name}", loss.item(), step)
             self.writer.add((loss.item(), "AE", agent.name, ""), step=step, tag="loss")
 
     def predict_from_latent_and_reconstruction(
