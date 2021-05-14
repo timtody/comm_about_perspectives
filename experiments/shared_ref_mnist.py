@@ -55,7 +55,7 @@ class Config(NamedTuple):
 
 
 class Experiment(BaseExperiment):
-    def log(self, step: int, agents):
+    def log(self, step: int, agents: "list[AutoEncoder]"):
         mlps = self.predict_from_latent_and_reconstruction(agents + [self.base_2], step)
         # add base_2 here to have 2 agents for swapping in the base case
         self.compute_cross_acc(agents + [self.base_2], mlps, step)
@@ -94,7 +94,7 @@ class Experiment(BaseExperiment):
             self.generate_autoencoder(f"{i}")
             for i in string.ascii_uppercase[: cfg.nagents]
         ]
-        agents_and_base = [base] + agents
+        agents_and_base = agents + [base]
 
         agent_index_pairs = list(itertools.combinations(range(len(agents)), r=2))
         for i in range(cfg.nsteps):
