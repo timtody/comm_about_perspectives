@@ -31,7 +31,7 @@ class Config(NamedTuple):
     # experiment: str = ""
 
     # hypsearch
-    grid_size: int = 2
+    grid_size: int = 1
     nsamples: int = 10
 
     # nets
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     processes = []
 
-    sweeper = Sweeper(hparams, 4, mode="grid")
+    sweeper = Sweeper(hparams, args.grid_size, mode="grid")
     for vars in sweeper.sweep():
         for var, value in vars:
             args.__setattr__(var, value)
@@ -140,8 +140,8 @@ if __name__ == "__main__":
             processes += procs
         elif args.mp_method == "slurm":
             for rank in range(args.nprocs):
-                print("Starting SLURM job:", jobname)
                 jobname = generate_tracking_tag(hparams) + "-" + str(rank)
+                print("Starting SLURM job:", jobname)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
             # this is required by the IDRIS administration to keep the throughput of jobs lower
             time.sleep(5)
