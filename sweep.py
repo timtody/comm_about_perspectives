@@ -129,6 +129,7 @@ if __name__ == "__main__":
     processes = []
 
     sweeper = Sweeper(hparams, args.grid_size, mode="grid")
+    print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     for vars in sweeper.sweep():
         for var, value in vars:
             args.__setattr__(var, value)
