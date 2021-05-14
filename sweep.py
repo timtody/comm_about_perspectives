@@ -142,12 +142,12 @@ if __name__ == "__main__":
         elif args.mp_method == "slurm":
             for rank in range(args.nprocs):
                 jobname = generate_tracking_tag(hparams) + str(rank)
-                print("Starting SLURM job:", jobname)
+                print("[SWEEPER]: Starting SLURM job:", jobname)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
             # this is required by the IDRIS administration to keep the throughput of jobs lower
             time.sleep(5)
         else:
-            raise InvalidConfigurationException("Invalid mp method name.")
+            raise InvalidConfigurationException("[SWEEPER]: Invalid mp method name.")
 
     if args.mp_method == "mp":
         for proc in processes:
