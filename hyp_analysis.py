@@ -1,8 +1,9 @@
+from io import DEFAULT_BUFFER_SIZE
 import itertools
 import os
 import string
 from pathlib import Path, PosixPath
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Tuple
 
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -26,7 +27,7 @@ DATA_LEN = 333
 
 
 def load_df_and_params(
-    posixpath: PosixPath, tag: str, columns: List[str]
+    posixpath: PosixPath, tag: str, columns: List[str], datafolder="data"
 ) -> Tuple[DataFrame, Dict[str, str]]:
     """
     Args:
@@ -36,7 +37,7 @@ def load_df_and_params(
     Returns:
         df: DataFrame
     """
-    reader = TidyReader(os.path.join(posixpath, "data"))
+    reader = TidyReader(os.path.join(posixpath, datafolder))
     df = reader.read(tag=tag, columns=columns)
     params = stem_to_params(posixpath.name)
     return df, params
@@ -177,6 +178,26 @@ def load_loss_data(path, threshold=2000):
         groups = df.groupby(["Type", "Agent_i"], as_index=False)
         df = groups.apply(
             lambda x: x[x["Step"] >= 45000].drop(axis=1, labels="Agent_j").mean()
+        )
+        for param, value in params.items():
+            df[param] = value
+        dfs.append(df)
+        if i > DATA_LEN:
+            break
+    return pd.concat(dfs)
+
+
+def load_acc_data(path):
+    paths = Path(path).glob("*")
+    dfs = []
+    i = 0
+    for path in paths:
+        i += 1
+        df, params = load_df_and_params(
+            path,
+            "cross_agent_accuracy_override",
+            ["Rank", "Tag", "Accuracy"],
+            "",
         )
         for param, value in params.items():
             df[param] = value
@@ -409,7 +430,12 @@ def plot_reconstruction_sim_measure(
 
 
 def compute_and_save_cov_matrix(
-    df: DataFrame, df_acc: DataFrame, hparams: List, path: str, agent="baseline"
+    df: DataFrame,
+    df_acc: DataFrame,
+    df_cross_acc: DataFrame,
+    hparams: List,
+    path: str,
+    agent="baseline",
 ) -> None:
     plt_base_path = f"plots/{'/'.join(path.split('/')[-2:])}"
     if not os.path.exists(plt_base_path):
@@ -426,10 +452,18 @@ def compute_and_save_cov_matrix(
 
     df = df.groupby(["Type", *hparams], as_index=False).mean()
     df_acc = df_acc.groupby(hparams, as_index=False).mean()
+    df_cross_acc = df_cross_acc.groupby([*hparams, "Tag"], as_index=False).mean()
+    df_cross_acc = df_cross_acc[df_cross_acc.Tag == "MA"]
+
     pivot_table = df.pivot(index=[*hparams], columns=["Type"], values="Loss")
     pivot_table = pivot_table.reset_index()
 
-    pivot_table["Accuracy"] = df_acc.Value
+    # need to reset index because we took away elements by preceeding groupby
+    df_cross_acc = df_cross_acc.reset_index()
+    pivot_table["Cross_acc"] = df_cross_acc["Accuracy"]
+    pivot_table["Accuracy"] = df_acc["Value"]
+    pivot_table["Swap_diff"] = pivot_table["Accuracy"] - pivot_table["Cross_acc"]
+
     pivot_table = pivot_table[pivot_table.columns].apply(pd.to_numeric)
     pivot_table.to_csv(f"{plt_base_path}/{agent}.csv")
 
@@ -437,8 +471,13 @@ def compute_and_save_cov_matrix(
     pivot_table = pivot_table[
         [
             "eta_dsa",
+            "eta_msa",
+            "eta_lsa",
+            "eta_ae",
             "sigma",
             "Accuracy",
+            "Swap_diff",
+            "Cross_acc",
             "AE",
             "LSA",
             "DSA",
@@ -481,19 +520,36 @@ def compute_and_save_cov_matrix(
     plt.savefig(plt_base_path + f"/{agent}.png")
 
 
+def compute_cross_accuracy(path_to_results: str, hparams: "list[list]", plot_path: str):
+    df_cross_acc: DataFrame = load_acc_data(path_to_results)
+    df_cross_acc = df_cross_acc.groupby([*hparams, "Tag"], as_index=False).agg(
+        [np.mean, np.std]
+    )
+    df_cross_acc.drop("Rank", axis=1, inplace=True)
+    df_cross_acc = df_cross_acc.sort_values(by=("Accuracy", "mean"), ascending=False)
+    df_cross_acc.to_csv(f"{plot_path}/cross_acc.csv")
+
+
+def load_crs_acc_data(path: str) -> DataFrame:
+    return load_acc_data(path)
+
+
 def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # if not os.path.exists("plots/" + path_to_plot):
     #     os.makedirs("plots/" + path_to_plot)
     path = f"plots/{'/'.join(path_to_results.split('/')[-2:])}"
 
-    # df_loss = load_loss_data(path_to_results)
-    # df_acc = load_data_raw(path_to_results)
-    # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
-    # df_acc = df_acc[df_acc["Type"] == "Latent"]
+    # compute_cross_accuracy(path_to_results, hparams, path)
 
+    df_loss = load_loss_data(path_to_results)
     df_acc = load_data_raw(path_to_results)
-    compute_plots_latent(df_acc, hparams, path)
-    compute_plots_rec(df_acc, hparams, path)
+    df_acc = df_acc[df_acc["Epoch"] == EPOCH]
+    df_acc = df_acc[df_acc["Type"] == "Latent"]
+    df_cross_acc = load_crs_acc_data(path_to_results)
+
+    # df_acc = load_data_raw(path_to_results)
+    # compute_plots_latent(df_acc, hparams, path)
+    # compute_plots_rec(df_acc, hparams, path)
     # name_of_best_exp = (
     #     "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
     # )
@@ -516,7 +572,9 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
     # # covariance matric between hparams and losses (final?)
-    # compute_and_save_cov_matrix(df_loss, df_acc, hparams, path_to_results, agent="ma")
+    compute_and_save_cov_matrix(
+        df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
+    )
     # compute_and_save_cov_matrix(
     #    df_loss, df_acc, hparams, path_to_results, agent="baseline"
     # )
@@ -524,7 +582,7 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-26/10-46-54",
-        ["eta_dsa", "sigma"],
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-20/14-58-18",
+        ["eta_ae", "eta_msa", "eta_lsa", "eta_dsa", "sigma"],
         "100-draws-fixed-high-lsa",
     )
