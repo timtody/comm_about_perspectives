@@ -56,7 +56,7 @@ class Config(NamedTuple):
 
 class Experiment(BaseExperiment):
     def log(self, step: int, agents):
-        mlps = self.predict_from_latent_and_reconstruction(agents, step)
+        mlps = self.predict_from_latent_and_reconstruction(agents + [self.base_2], step)
         # add base_2 here to have 2 agents for swapping in the base case
         self.compute_cross_acc(agents + [self.base_2], mlps, step)
         self.save_params(step, agents)
@@ -65,9 +65,9 @@ class Experiment(BaseExperiment):
     def compute_cross_acc(
         self, agents: "list[AutoEncoder]", mlps: "list[MLP]", step: int
     ):
+        # TODO: DANGEROUS! will NOT scale with more agents. FIX!!!
         ma_aes, ma_mlps = agents[:3], mlps[:3]
         sa_aes, sa_mlps = agents[3:], mlps[3:]
-
         X, y = map(
             lambda x: x.to(self.dev),
             self.dataset.sample_with_label(int(self.cfg.bsize)),
