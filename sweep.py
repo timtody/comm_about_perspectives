@@ -131,7 +131,7 @@ if __name__ == "__main__":
     sweeper = Sweeper(hparams, args.grid_size, mode="grid")
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     sweep = list(sweeper.sweep())
-    for vars in sweep[494:]:
+    for vars in sweep[544:]:
         for var, value in vars:
             args.__setattr__(var, value)
 
