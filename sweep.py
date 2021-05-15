@@ -130,12 +130,13 @@ if __name__ == "__main__":
 
     sweeper = Sweeper(hparams, args.grid_size, mode="grid")
     # print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
-    for vars in sweeper.sweep():
+    sweep = list(sweeper.sweep())
+    for vars in sweep[280:]:
         for var, value in vars:
             args.__setattr__(var, value)
 
         path: str = generate_run_path(sweep_root_path, args, hparams)
-        # print("Starting experiment on path", path)
+        print("Starting experiment on path", path)
         if args.mp_method == "mp":
             procs = run_single_from_sweep_mp(Experiment, args, path)
             processes += procs
@@ -143,9 +144,9 @@ if __name__ == "__main__":
             for rank in range(args.nprocs):
                 jobname = generate_tracking_tag(hparams) + str(rank)
                 print("[SWEEPER]: Starting SLURM job:", jobname)
-                # run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
+                run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
             # this is required by the IDRIS administration to keep the throughput of jobs lower
-            # time.sleep(5)
+            time.sleep(5)
         else:
             raise InvalidConfigurationException("[SWEEPER]: Invalid mp method name.")
 
