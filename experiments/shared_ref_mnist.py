@@ -32,7 +32,7 @@ class Config(NamedTuple):
     ngpus: int = 1
 
     # message boundary
-    detach: bool = True
+    nodetach: bool = False
 
     # nets
     latent_dim: int = 30
@@ -139,6 +139,8 @@ class Experiment(BaseExperiment):
         # compute message and reconstructions
         msg_a = agent_a.encode(batch_a)
         msg_b = agent_b.encode(batch_b)
+        msg_a_maybe_detached = msg_a if self.cfg.nodetach else msg_a.detach()
+        msg_b_maybe_detached = msg_b if self.cfg.nodetach else msg_b.detach()
 
         # add channel noise to messages
         msg_a += torch.randn_like(msg_a) * self.cfg.sigma
@@ -148,16 +150,17 @@ class Experiment(BaseExperiment):
         ## rec_ab is a's reconstruction of b's message and so forth..
         rec_aa = agent_a.decode(msg_a)
         rec_bb = agent_b.decode(msg_b)
-        rec_ab = agent_a.decode(msg_b.detach() if self.cfg.detach else msg_b)
-        rec_ba = agent_b.decode(msg_a.detach() if self.cfg.detach else msg_a)
+        # needs to
+        rec_ab = agent_a.decode(msg_b_maybe_detached)
+        rec_ba = agent_b.decode(msg_a_maybe_detached)
 
         # autoencoding
         ae_loss_a = F.mse_loss(rec_aa, batch_a)
         ae_loss_b = F.mse_loss(rec_bb, batch_b)
 
         # latent space adaptation
-        lsa_loss_a = F.mse_loss(msg_a, msg_b.detach())
-        lsa_loss_b = F.mse_loss(msg_b, msg_a.detach())
+        lsa_loss_a = F.mse_loss(msg_a, msg_b_maybe_detached)
+        lsa_loss_b = F.mse_loss(msg_b, msg_a_maybe_detached)
 
         # message space adaptation
         msa_loss_a = F.mse_loss(rec_ab, batch_a)
