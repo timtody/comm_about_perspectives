@@ -30,6 +30,8 @@ class Config(NamedTuple):
     # for future specifying exp from clargs
     # experiment: str = ""
 
+    nodetach: bool = False
+
     # hypsearch
     grid_size: int = 1
     nsamples: int = 10
