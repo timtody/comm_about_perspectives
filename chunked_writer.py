@@ -134,7 +134,7 @@ class TidyReader:
             pd.DataFrame: The resulting dataframe.
         """
         # TODO: check if we can find data with this tag otherwise error or warn
-        csv_paths: List = list(Path(path).glob(f"*.{tag}.csv"))
+        csv_paths: List = list(Path(path).glob(rf"*.{tag}.csv"))
         sort_key: Callable[[PosixPath], str] = lambda x: str(x).split(".")[0]
         sorted_paths: List = sorted(csv_paths, key=sort_key, reverse=True)
         dataframes: List[pd.DataFrame] = []

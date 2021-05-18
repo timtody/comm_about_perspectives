@@ -195,9 +195,8 @@ def load_acc_data(path):
         i += 1
         df, params = load_df_and_params(
             path,
-            "cross_agent_accuracy_override",
-            ["Rank", "Tag", "Accuracy"],
-            "",
+            "cross_agent_acc",
+            ["Rank", "Epoch", "Tag", "Accuracy"],
         )
         for param, value in params.items():
             df[param] = value
@@ -553,7 +552,7 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     compute_plots_latent(df_acc, hparams, path)
     compute_plots_rec(df_acc, hparams, path)
 
-    name_of_best_exp = "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0--"
+    name_of_best_exp = "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-"
 
     # t-sne in latent space
     # plot_tsne(
@@ -579,9 +578,9 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     compute_and_save_cov_matrix(
         df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
     )
-    compute_and_save_cov_matrix(
-        df_loss, df_acc, hparams, path_to_results, agent="baseline"
-    )
+    # compute_and_save_cov_matrix(
+    #     df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="baseline"
+    # )
 
 
 if __name__ == "__main__":
