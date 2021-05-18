@@ -44,10 +44,10 @@ class Config(NamedTuple):
     affine: bool = False
 
     # channel noise
-    sigma: float = 0.0
+    sigma: float = 0.25
 
     # hyperparameters
-    eta_ae: float = 0.0
+    eta_ae: float = 1.0
     eta_lsa: float = 0.0
     eta_msa: float = 0.0
     eta_dsa: float = 0.0
@@ -118,7 +118,8 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
 
-    hparams = ["sigma", "eta_ae", "eta_msa", "eta_lsa", "eta_dsa"]
+    hparams = ["eta_lsa"]
+    ranges = [(0, 0.4)]
 
     sweep_root_path = generate_sweep_path(Experiment)
 
@@ -128,10 +129,10 @@ if __name__ == "__main__":
 
     processes = []
 
-    sweeper = Sweeper(hparams, args.grid_size, mode="grid")
+    sweeper = Sweeper(hparams, args.grid_size, mode="grid", ranges=ranges)
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     sweep = list(sweeper.sweep())
-    for vars in sweep[544:]:
+    for vars in sweep:
         for var, value in vars:
             args.__setattr__(var, value)
 

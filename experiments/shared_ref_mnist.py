@@ -59,7 +59,7 @@ class Experiment(BaseExperiment):
         mlps = self.predict_from_latent_and_reconstruction(agents + [self.base_2], step)
         # add base_2 here to have 2 agents for swapping in the base case
         self.compute_cross_acc(agents + [self.base_2], mlps, step)
-        self.save_params(step, agents)
+        self.save_params(step, agents + [self.base_2])
         self.writer._write()
 
     def compute_cross_acc(

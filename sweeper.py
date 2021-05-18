@@ -28,10 +28,19 @@ class Sweeper:
             return self._sweep_sample()
 
     def _sweep_grid(self) -> Generator:
-        ranges = [
-            map(lambda e: round(e, 2), list(np.linspace(0, 1, self.steps)))
-            for _ in self.vars
-        ]
+        if self.ranges is None:
+            ranges = [
+                map(lambda e: round(e, 2), list(np.linspace(0, 1, self.steps)))
+                for _ in self.vars
+            ]
+        else:
+            ranges = [
+                map(
+                    lambda e: round(e, 2),
+                    list(np.linspace(vr[1][0], vr[1][1], self.steps)),
+                )
+                for vr in zip(self.vars, self.ranges)
+            ]
         cartesian = itertools.product(*ranges)
         for vals in cartesian:
             yield list(zip(self.vars, vals))

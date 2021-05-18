@@ -22,7 +22,7 @@ from chunked_writer import TidyReader
 from mnist import MNISTDataset
 
 EPOCH = 49999.0
-DATA_LEN = 333
+DATA_LEN = 99999
 # sns.set(style="whitegrid")
 
 
@@ -309,11 +309,12 @@ def _make_plots(df, hparams, tag, path_to_plot):
 def _load_aes(path):
     autoencoders = [
         AutoEncoder(30, bnorm=False, affine=False, name=name, lr=0.001)
-        for name in string.ascii_uppercase[:3]
+        for name in string.ascii_uppercase[:2]
     ]
-    baseline = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
+    baseline1 = AutoEncoder(30, bnorm=False, affine=False, name="Base1", lr=0.001)
+    baseline2 = AutoEncoder(30, bnorm=False, affine=False, name="Base2", lr=0.001)
 
-    all_agents: List[AutoEncoder] = autoencoders + [baseline]
+    all_agents: List[AutoEncoder] = autoencoders + [baseline1, baseline2]
     [
         agent.load_state_dict(
             torch.load(f"{path}/{agent.name}.pt", map_location=torch.device("cpu"))
@@ -325,17 +326,17 @@ def _load_aes(path):
 
 def plot_tsne(path, path_to_plot, tag):
     dataset = MNISTDataset()
-    ims, labels = dataset.sample_with_label(5000)
+    ims, labels = dataset.sample_with_label(10000)
     all_agents = _load_aes(path)
 
     results = []
 
     for ae in all_agents:
         encoded = ae.encode(ims)
-        embedding = TSNE(n_components=2, random_state=123).fit_transform(
-            encoded.detach()
-        )
-        for emb, label in zip(embedding, labels):
+        embedding = TSNE(
+            n_components=2, random_state=4444, perplexity=50, method="exact", n_jobs=8
+        ).fit_transform(encoded.detach())
+        for emb, label in zip(embedding[::5], labels[::5]):
             results.append((emb[0], emb[1], int(label.item()), ae.name))
 
     _generate_tsne_relplot(results, path_to_plot, tag)
@@ -539,6 +540,8 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # if not os.path.exists("plots/" + path_to_plot):
     #     os.makedirs("plots/" + path_to_plot)
     path = f"plots/{'/'.join(path_to_results.split('/')[-2:])}"
+    if not os.path.exists(path):
+        os.makedirs(path)
 
     # compute_cross_accuracy(path_to_results, hparams, path)
 
@@ -546,27 +549,27 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # df_acc = load_data_raw(path_to_results)
     # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
     # df_acc = df_acc[df_acc["Type"] == "Latent"]
-    # df_cross_acc = load_crs_acc_data(path_to_results)
+    # # df_cross_acc = load_crs_acc_data(path_to_results)
 
-    # df_acc = load_data_raw(path_to_results)
+    # # df_acc = load_data_raw(path_to_results)
     # compute_plots_latent(df_acc, hparams, path)
     # compute_plots_rec(df_acc, hparams, path)
     # name_of_best_exp = (
-    #     "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
+    #    "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
     # )
 
     # t-sne in latent space
     plot_tsne(
         os.path.join(
             path_to_results,
-            "sigma:0.325-eta_dsa:0.974-",
-            f"params/step_{int(EPOCH)}/rank_1",
+            "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-",
+            f"params/step_{int(EPOCH)}/rank_0",
         ),
         path,
-        "sigma:0.325",
+        "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-",
     )
 
-    # # reconstruction from good marl agents vs. baseline agents for some digits
+    # # reconstr uction from good marl agents vs. baseline agents for some digits
     # plot_img_reconstructions(
     #     path_to_results, name_of_best_exp, path_to_plot, baseline=False
     # )
@@ -586,7 +589,7 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-26/10-46-54",
+        "results/gridsweep",
         ["eta_ae", "eta_msa", "eta_lsa", "eta_dsa", "sigma"],
         "100-draws-fixed-high-lsa",
     )
