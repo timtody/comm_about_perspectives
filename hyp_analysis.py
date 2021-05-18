@@ -334,7 +334,7 @@ def plot_tsne(path, path_to_plot, tag):
     for ae in all_agents:
         encoded = ae.encode(ims)
         embedding = TSNE(
-            n_components=2, random_state=4444, perplexity=50, method="exact", n_jobs=8
+            n_components=2, random_state=4444, perplexity=50, n_jobs=8
         ).fit_transform(encoded.detach())
         for emb, label in zip(embedding[::5], labels[::5]):
             results.append((emb[0], emb[1], int(label.item()), ae.name))
@@ -396,8 +396,6 @@ def plot_img_reconstructions(
         rec = ae(digit.reshape(1, 1, 28, 28))
         ax_column[1].imshow(rec.squeeze().detach())
         ax_column[1].set_axis_off()
-    plt.show()
-    exit(1)
     plt_path = f"plots/{path_to_plot}/reconstructions_baseline_{baseline}"
     plt.savefig(plt_path + ".pdf")
     plt.savefig(plt_path + ".svg")
@@ -545,46 +543,45 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
 
     # compute_cross_accuracy(path_to_results, hparams, path)
 
-    # df_loss = load_loss_data(path_to_results)
-    # df_acc = load_data_raw(path_to_results)
-    # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
-    # df_acc = df_acc[df_acc["Type"] == "Latent"]
-    # # df_cross_acc = load_crs_acc_data(path_to_results)
+    df_loss = load_loss_data(path_to_results)
+    df_acc = load_data_raw(path_to_results)
+    df_acc = df_acc[df_acc["Epoch"] == EPOCH]
+    df_acc = df_acc[df_acc["Type"] == "Latent"]
+    df_cross_acc = load_crs_acc_data(path_to_results)
 
-    # # df_acc = load_data_raw(path_to_results)
-    # compute_plots_latent(df_acc, hparams, path)
-    # compute_plots_rec(df_acc, hparams, path)
-    # name_of_best_exp = (
-    #    "sigma:0.001-eta_lsa:0.859-eta_msa:0.017-eta_dsa:0.149-eta_ae:0.653-"
-    # )
+    df_acc = load_data_raw(path_to_results)
+    compute_plots_latent(df_acc, hparams, path)
+    compute_plots_rec(df_acc, hparams, path)
+
+    name_of_best_exp = "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0--"
 
     # t-sne in latent space
-    plot_tsne(
-        os.path.join(
-            path_to_results,
-            "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-",
-            f"params/step_{int(EPOCH)}/rank_0",
-        ),
-        path,
-        "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-",
+    # plot_tsne(
+    #     os.path.join(
+    #         path_to_results,
+    #         "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-",
+    #         f"params/step_{int(EPOCH)}/rank_0",
+    #     ),
+    #     path,
+    #     "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-",
+    # )
+
+    # reconstr uction from good marl agents vs. baseline agents for some digits
+    plot_img_reconstructions(
+        path_to_results, name_of_best_exp, path_to_plot, baseline=False
     )
+    plot_img_reconstructions(
+        path_to_results, name_of_best_exp, path_to_plot, baseline=True
+    )
+    plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
-    # # reconstr uction from good marl agents vs. baseline agents for some digits
-    # plot_img_reconstructions(
-    #     path_to_results, name_of_best_exp, path_to_plot, baseline=False
-    # )
-    # plot_img_reconstructions(
-    #     path_to_results, name_of_best_exp, path_to_plot, baseline=True
-    # )
-    # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
-
-    # # covariance matric between hparams and losses (final?)
-    # compute_and_save_cov_matrix(
-    #     df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
-    # )
-    # compute_and_save_cov_matrix(
-    #    df_loss, df_acc, hparams, path_to_results, agent="baseline"
-    # )
+    # covariance matric between hparams and losses (final?)
+    compute_and_save_cov_matrix(
+        df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
+    )
+    compute_and_save_cov_matrix(
+        df_loss, df_acc, hparams, path_to_results, agent="baseline"
+    )
 
 
 if __name__ == "__main__":

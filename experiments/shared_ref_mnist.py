@@ -31,6 +31,9 @@ class Config(NamedTuple):
     nagents: int = 3
     ngpus: int = 1
 
+    # message boundary
+    detach: bool = True
+
     # nets
     latent_dim: int = 30
     lr: float = 0.001
@@ -145,8 +148,8 @@ class Experiment(BaseExperiment):
         ## rec_ab is a's reconstruction of b's message and so forth..
         rec_aa = agent_a.decode(msg_a)
         rec_bb = agent_b.decode(msg_b)
-        rec_ab = agent_a.decode(msg_b.detach())
-        rec_ba = agent_b.decode(msg_a.detach())
+        rec_ab = agent_a.decode(msg_b.detach() if self.cfg.detach else msg_b)
+        rec_ba = agent_b.decode(msg_a.detach() if self.cfg.detach else msg_a)
 
         # autoencoding
         ae_loss_a = F.mse_loss(rec_aa, batch_a)
