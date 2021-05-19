@@ -38,6 +38,7 @@ class Config(NamedTuple):
     dataset: str = "MNIST"  # MNIST or CLUTTER
 
     # hypsearch
+    sweeper_mode: str = "grid"  # 'grid' or 'sample'
     grid_size: int = 1
     nsamples: int = 10
 
@@ -125,8 +126,8 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
 
-    hparams = ["eta_lsa"]
-    ranges = [(0, 0.4)]
+    hparams = ["sigma", "eta_ae", "eta_lsa", "eta_msa", "eta_dsa"]
+    # ranges = [(0, 1), (0)]
 
     sweep_root_path = generate_sweep_path(Experiment)
 
@@ -136,10 +137,9 @@ if __name__ == "__main__":
 
     processes = []
 
-    sweeper = Sweeper(hparams, args.grid_size, mode="grid", ranges=ranges)
+    sweeper = Sweeper(hparams, args.grid_size, mode=args.sweeper_mode)
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
-    sweep = list(sweeper.sweep())
-    for vars in sweep:
+    for vars in sweeper.sweep():
         for var, value in vars:
             args.__setattr__(var, value)
 

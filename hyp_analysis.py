@@ -542,7 +542,7 @@ def main(path_to_results: str, hparams: List[str]):
 
     # compute_cross_accuracy(path_to_results, hparams, path)
 
-    df_loss = load_loss_data(path_to_results)
+    # df_loss = load_loss_data(path_to_results)
     df_acc = load_data_raw(path_to_results)
     df_acc = df_acc[df_acc["Epoch"] == EPOCH]
     df_acc = df_acc[df_acc["Type"] == "Latent"]
@@ -582,6 +582,6 @@ def main(path_to_results: str, hparams: List[str]):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-18/15-27-12",
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-19/12-57-35",
         ["eta_lsa"],
     )

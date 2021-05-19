@@ -46,9 +46,18 @@ class Sweeper:
             yield list(zip(self.vars, vals))
 
     def _sweep_sample(self) -> Generator:
-        raise NotImplementedError
+        zeros = np.zeros(len(self.vars))
+        for i, _ in enumerate(self.vars):
+            z = zeros.copy()
+            z[i] = 1
+            yield list(zip(self.vars, z))
+        for _ in range(self.steps):
+            values = np.random.uniform(0, 1, len(self.vars))
+            values = map(lambda x: round(x, 2), values)
+            yield list(zip(self.vars, values))
 
 
 if __name__ == "__main__":
-    sweeper = Sweeper(["x", "y", "z", "a"], 5).sweep()
-    print(len(list(sweeper)))
+    sweeper = Sweeper(["x", "y", "z", "a"], 10, mode="sample").sweep()
+    for vars in sweeper:
+        print(vars)
