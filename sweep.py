@@ -27,10 +27,15 @@ class Config(NamedTuple):
     nagents: int = 3
     ngpus: int = 1
     mp_method: str = "slurm"
-    # for future specifying exp from clargs
-    # experiment: str = ""
+    log_every: int = 50  # how often we write to readers / tb
 
     nodetach: bool = False
+
+    # agents use same digit as input
+    samedigit: bool = False
+
+    # choose the dataset
+    dataset: str = "MNIST"  # MNIST or CLUTTER
 
     # hypsearch
     grid_size: int = 1
