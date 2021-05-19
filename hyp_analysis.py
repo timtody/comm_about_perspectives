@@ -302,7 +302,7 @@ def _make_plots(df, hparams, tag, path_to_plot):
     df = df[df.Agent != "baseline"]
     df = df[df.Epoch == EPOCH]
     groups = df.groupby([*hparams], as_index=False).mean()
-    plot_pcoords(groups, [*hparams, "Value"], tag, path_to_plot)
+    # plot_pcoords(groups, [*hparams, "Value"], tag, path_to_plot)
 
 
 def _load_aes(path):
@@ -395,7 +395,7 @@ def plot_img_reconstructions(
         rec = ae(digit.reshape(1, 1, 28, 28))
         ax_column[1].imshow(rec.squeeze().detach())
         ax_column[1].set_axis_off()
-    plt_path = f"plots/{path_to_plot}/reconstructions_baseline_{baseline}"
+    plt_path = f"{path_to_plot}/reconstructions_baseline_{baseline}"
     plt.savefig(plt_path + ".pdf")
     plt.savefig(plt_path + ".svg")
     plt.close()
@@ -533,7 +533,7 @@ def load_crs_acc_data(path: str) -> DataFrame:
     return load_acc_data(path)
 
 
-def main(path_to_results: str, hparams: List[str], path_to_plot: str):
+def main(path_to_results: str, hparams: List[str]):
     # if not os.path.exists("plots/" + path_to_plot):
     #     os.makedirs("plots/" + path_to_plot)
     path = f"plots/{'/'.join(path_to_results.split('/')[-2:])}"
@@ -551,6 +551,7 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     df_acc = load_data_raw(path_to_results)
     compute_plots_latent(df_acc, hparams, path)
     compute_plots_rec(df_acc, hparams, path)
+    exit(1)
 
     name_of_best_exp = "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-"
 
@@ -566,18 +567,14 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
     # )
 
     # reconstr uction from good marl agents vs. baseline agents for some digits
-    plot_img_reconstructions(
-        path_to_results, name_of_best_exp, path_to_plot, baseline=False
-    )
-    plot_img_reconstructions(
-        path_to_results, name_of_best_exp, path_to_plot, baseline=True
-    )
-    plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
+    plot_img_reconstructions(path_to_results, name_of_best_exp, path, baseline=False)
+    plot_img_reconstructions(path_to_results, name_of_best_exp, path, baseline=True)
+    # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
-    # covariance matric between hparams and losses (final?)
-    compute_and_save_cov_matrix(
-        df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
-    )
+    # # covariance matric between hparams and losses (final?)
+    # compute_and_save_cov_matrix(
+    #     df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
+    # )
     # compute_and_save_cov_matrix(
     #     df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="baseline"
     # )
@@ -585,7 +582,6 @@ def main(path_to_results: str, hparams: List[str], path_to_plot: str):
 
 if __name__ == "__main__":
     main(
-        "results/gridsweep",
-        ["eta_ae", "eta_msa", "eta_lsa", "eta_dsa", "sigma"],
-        "100-draws-fixed-high-lsa",
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-18/15-27-12",
+        ["eta_lsa"],
     )

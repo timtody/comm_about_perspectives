@@ -1,18 +1,15 @@
-from matplotlib import image
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.core.fromnumeric import size
-from numpy.lib.type_check import imag
 import scipy.io
 import torch
 
 
-class DigitClutter:
+class ClutterDataset:
     def __init__(self, split=0.9) -> None:
         data = scipy.io.loadmat("data/light_debris/light_debris_with_debris.mat")
         # moveaxis transforms data to pytorch format (NxCxHxW)
         images = torch.tensor(data["images"], dtype=torch.float32).moveaxis(-1, 1)
-        labels = torch.tensor(data["targets"])
+        labels = torch.tensor(data["targets"], dtype=torch.int64).squeeze()
 
         split_index = int(len(labels) * split)
         self.train = Subset(images[:split_index], labels[:split_index])
@@ -33,9 +30,10 @@ class DigitClutter:
         labels = self.train.labels[sampling_indices]
         return images, labels
 
-    def sample_digit(self, digit: int, bsize: int = 100) -> torch.Tensor:
-        # TODO: Implement
-        raise NotImplementedError
+    def sample_digit(self, digit: int, bsize: int = 100, train=True) -> torch.Tensor:
+        subset_len = len(self.train.dict[digit])
+        indices = np.random.randint(subset_len, size=bsize) % subset_len
+        return self.transform(self.train.dict[digit][indices])
 
     def sample_all_digits_once(self) -> torch.Tensor:
         # TODO: Implement
@@ -59,12 +57,21 @@ class Subset:
     def __init__(self, images: list, labels: list) -> None:
         self.images = images
         self.labels = labels
+        self.dict = self._generate_digit_dict(images, labels)
+
+    def _generate_digit_dict(self, images, labels):
+        d = {}
+        for digit in range(10):
+            # squeeze here
+            d[digit] = images[(labels == digit)]
+        return d
 
     def __len__(self):
         return len(self.labels)
 
 
 if __name__ == "__main__":
-    dataset = DigitClutter()
-    data = dataset.sample(3)
+    dataset = ClutterDataset()
+    data = dataset.sample_digit(9, 10)
     print(data.size())
+    # print(dataset.sample(10).size())

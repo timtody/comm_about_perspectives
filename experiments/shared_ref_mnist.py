@@ -13,6 +13,7 @@ import torch.optim as optim
 from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
+from clutter import ClutterDataset
 from torch.tensor import Tensor
 from torch.utils.tensorboard import SummaryWriter
 
@@ -20,19 +21,26 @@ from experiments.experiment import BaseExperiment
 
 eps = 0.0001
 
-# TODO: make this config modular!
+
 class Config(NamedTuple):
     # experiement params
     seed: int = 123
     nprocs: int = 1
     nogpu: bool = False
-    logfreq: int = 50
-    nsteps: int = 200
+    logfreq: int = 10
+    nsteps: int = 20
     nagents: int = 3
     ngpus: int = 1
+    log_every: int = 50  # how often we write to readers / tb
 
     # message boundary
     nodetach: bool = False
+
+    # choose the dataset
+    dataset: str = "MNIST"  # MNIST or CLUTTER
+
+    # agents use same digit as input
+    samedigit: bool = False
 
     # nets
     latent_dim: int = 30
@@ -53,7 +61,7 @@ class Config(NamedTuple):
     eta_dsa: float = 0.0
 
     # assessment of abstraction
-    nsteps_pred_latent: int = 50
+    nsteps_pred_latent: int = 10
     bsize_pred_latent: int = 32
 
 
@@ -86,7 +94,12 @@ class Experiment(BaseExperiment):
             self.tb.add_scalar(f"cross_agent_acc_{tag}_step{step}", acc)
 
     def run(self, cfg: NamedTuple):
-        self.dataset = MNISTDataset()
+        if self.cfg.dataset == "MNIST":
+            self.dataset = MNISTDataset()
+        elif self.cfg.dataset == "CLUTTER":
+            self.dataset = ClutterDataset()
+        else:
+            raise Exception("Wrong dataset name specified")
 
         tb_path = f"{self.path}/tb/{self.rank}"
         self.tb = SummaryWriter(tb_path)
@@ -126,16 +139,24 @@ class Experiment(BaseExperiment):
         for agent in agents:
             torch.save(agent.state_dict(), os.path.join(path, f"{agent.name}.pt"))
 
-    def generate_autoencoder(self, name: AnyStr):
+    def generate_autoencoder(self, name: str):
         return AutoEncoder(
-            self.cfg.latent_dim, self.cfg.bnorm, self.cfg.affine, self.cfg.lr, name
+            self.cfg.latent_dim,
+            self.cfg.bnorm,
+            self.cfg.affine,
+            self.cfg.lr,
+            name,
+            pre_latent_dim=49 if self.cfg.dataset == "MNIST" else 64,
         ).to(self.dev)
 
     def sync_ae_step(self, step: int, agent_a: AutoEncoder, agent_b: AutoEncoder):
         digit = random.choice(range(10))
         batch_a = self.dataset.sample_digit(digit, bsize=self.cfg.bsize).to(self.dev)
-        batch_b = self.dataset.sample_digit(digit, bsize=self.cfg.bsize).to(self.dev)
-
+        batch_b = (
+            batch_a
+            if self.cfg.samedigit
+            else self.dataset.sample_digit(digit, bsize=self.cfg.bsize).to(self.dev)
+        )
         # compute message and reconstructions
         msg_a = agent_a.encode(batch_a)
         msg_b = agent_b.encode(batch_b)
@@ -203,7 +224,7 @@ class Experiment(BaseExperiment):
         ab_name = agent_a.name + agent_b.name
         ba_name = agent_b.name + agent_a.name
 
-        if step % 50 == 0:
+        if step % self.cfg.log_every == 0:
             self.tb.add_scalar(f"AEloss{ab_name}", ae_loss_a, step)
             self.tb.add_scalar(f"AEloss{ba_name}", ae_loss_b, step)
 
@@ -268,7 +289,7 @@ class Experiment(BaseExperiment):
         agent.opt.zero_grad()
         loss.backward()
         agent.opt.step()
-        if step % 50 == 0:
+        if step % self.cfg.log_every == 0:
             self.tb.add_scalar(f"ae_loss_control_{agent.name}", loss.item(), step)
             self.writer.add((loss.item(), "AE", agent.name, ""), step=step, tag="loss")
 
@@ -378,11 +399,10 @@ class CNN(nn.Module):
         self.opt = optim.Adam(self.parameters())
 
     def forward(self, xb):
-        xb = xb.view(-1, 1, 28, 28)
         xb = F.relu(self.conv1(xb))
         xb = F.relu(self.conv2(xb))
         xb = F.relu(self.conv3(xb))
-        xb = self.l1(xb.reshape(-1, 160))
+        xb = self.l1(xb.flatten(start_dim=1))
         return xb
 
     def compute_acc(self, ims, labels):
