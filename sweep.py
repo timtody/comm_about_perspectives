@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from typing import NamedTuple
 
 import numpy as np
+from torch.nn.functional import GRID_SAMPLE_INTERPOLATION_MODES
 
 from experiments.shared_ref_mnist import Experiment
 from functions import (
@@ -39,8 +40,8 @@ class Config(NamedTuple):
 
     # hypsearch
     sweeper_mode: str = "grid"  # 'grid' or 'sample'
-    grid_size: int = 1
-    nsamples: int = 10
+    gridsteps: int = 1
+    nsamples: int = 1
 
     # nets
     latent_dim: int = 30
@@ -126,7 +127,7 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
 
-    hparams = ["sigma", "eta_ae", "eta_lsa", "eta_msa", "eta_dsa"]
+    hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"]
 
     sweep_root_path = generate_sweep_path(Experiment)
 
@@ -136,7 +137,12 @@ if __name__ == "__main__":
 
     processes = []
 
-    sweeper = Sweeper(hparams, args.grid_size, mode=args.sweeper_mode)
+    sweeper = Sweeper(
+        sample_vars=hparams[:-1],
+        grid_vars=hparams[-1:],
+        nsamples=args.nsamples,
+        gridsteps=args.gridsteps,
+    )
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     for vars in sweeper.sweep():
         for var, value in vars:

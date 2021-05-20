@@ -72,6 +72,8 @@ class Subset:
 
 if __name__ == "__main__":
     dataset = ClutterDataset()
-    data = dataset.sample_digit(9, 10)
-    print(data.size())
-    # print(dataset.sample(10).size())
+    ims, labels = dataset.sample_with_label(10)
+    for im, label in zip(ims, labels):
+        plt.imshow(im.reshape(32, 32))
+        print(label)
+        plt.show()
