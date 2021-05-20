@@ -21,8 +21,8 @@ from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
 
-EPOCH = 49999.0
-DATA_LEN = 99999
+EPOCH = 34999.0
+DATA_LEN = 9999
 # sns.set(style="whitegrid")
 
 
@@ -211,7 +211,11 @@ def compute_and_save_reg_coefs(df, hparams, tag, path_to_plot):
 
     ## filter out baseline because most parameters have no influence on it
     ## only look at last epoch
-    df = df[(df["Agent"] != "baseline") & (df["Epoch"] == EPOCH)]
+    df = df[
+        (df["Agent"] != "baseline_1")
+        & (df["Agent"] != "baseline_2")
+        & (df["Epoch"] == EPOCH)
+    ]
     ## compute the mean across ranks and agents to arrive at 1 acc. value per set of hparams
     groups: DataFrame = df.groupby(hparams, as_index=False).mean()
 
@@ -372,7 +376,7 @@ def plot_img_reconstructions(
             os.path.join(
                 root_path,
                 name_of_best_exp,
-                f"params/step_{epoch}/rank_0/{'A' if not baseline else 'baseline'}.pt",
+                f"params/step_{int(EPOCH)}/rank_0/{'A' if not baseline else 'baseline'}.pt",
             ),
             map_location=torch.device("cpu"),
         )
@@ -542,18 +546,17 @@ def main(path_to_results: str, hparams: List[str]):
 
     # compute_cross_accuracy(path_to_results, hparams, path)
 
-    # df_loss = load_loss_data(path_to_results)
-    df_acc = load_data_raw(path_to_results)
-    df_acc = df_acc[df_acc["Epoch"] == EPOCH]
-    df_acc = df_acc[df_acc["Type"] == "Latent"]
-    df_cross_acc = load_crs_acc_data(path_to_results)
+    # # df_loss = load_loss_data(path_to_results)
+    # df_acc = load_data_raw(path_to_results)
+    # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
+    # df_acc = df_acc[df_acc["Type"] == "Latent"]
+    # df_cross_acc = load_crs_acc_data(path_to_results)
 
     df_acc = load_data_raw(path_to_results)
     compute_plots_latent(df_acc, hparams, path)
     compute_plots_rec(df_acc, hparams, path)
-    exit(1)
 
-    name_of_best_exp = "sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.33-eta_dsa:0.0-"
+    name_of_best_exp = "sigma:0.0-eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-"
 
     # t-sne in latent space
     # plot_tsne(
@@ -567,8 +570,8 @@ def main(path_to_results: str, hparams: List[str]):
     # )
 
     # reconstr uction from good marl agents vs. baseline agents for some digits
-    plot_img_reconstructions(path_to_results, name_of_best_exp, path, baseline=False)
-    plot_img_reconstructions(path_to_results, name_of_best_exp, path, baseline=True)
+    # plot_img_reconstructions(path_to_results, name_of_best_exp, path, baseline=False)
+    # plot_img_reconstructions(path_to_results, name_of_best_exp, path, baseline=True)
     # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
     # # covariance matric between hparams and losses (final?)
@@ -582,6 +585,6 @@ def main(path_to_results: str, hparams: List[str]):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-19/12-57-35",
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-19/13-06-50",
         ["eta_lsa"],
     )

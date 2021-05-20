@@ -127,7 +127,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     hparams = ["sigma", "eta_ae", "eta_lsa", "eta_msa", "eta_dsa"]
-    # ranges = [(0, 1), (0)]
 
     sweep_root_path = generate_sweep_path(Experiment)
 

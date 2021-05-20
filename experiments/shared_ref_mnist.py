@@ -157,6 +157,7 @@ class Experiment(BaseExperiment):
             if self.cfg.samedigit
             else self.dataset.sample_digit(digit, bsize=self.cfg.bsize).to(self.dev)
         )
+
         # compute message and reconstructions
         msg_a = agent_a.encode(batch_a)
         msg_b = agent_b.encode(batch_b)
