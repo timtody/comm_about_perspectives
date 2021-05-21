@@ -15,6 +15,7 @@ from functions import (
 )
 from slurm_runner import run_single_from_sweep_slurm
 from sweeper import Sweeper
+from copy import copy
 
 
 # TODO: make this config modular!
@@ -143,8 +144,43 @@ if __name__ == "__main__":
         nsamples=args.nsamples,
         gridsteps=args.gridsteps,
     )
+    param_list = [
+        [
+            ("eta_ae", 0.0),
+            ("eta_lsa", 0.0),
+            ("eta_msa", 1.0),
+            ("eta_dsa", 0.0),
+        ],
+        [
+            ("eta_ae", 0.53),
+            ("eta_lsa", 0.01),
+            ("eta_msa", 0.74),
+            ("eta_dsa", 0.84),
+        ],
+        [
+            ("eta_ae", 0.81),
+            ("eta_lsa", 0.14),
+            ("eta_msa", 0.95),
+            ("eta_dsa", 0.01),
+        ],
+        [
+            ("eta_ae", 1.0),
+            ("eta_lsa", 0.0),
+            ("eta_msa", 0.0),
+            ("eta_dsa", 0.0),
+        ],
+    ]
+
+    noise_levels = [0.0, 0.33, 0.67, 1.0]
+    fixed_sweep = []
+    for params in param_list:
+        for nl in noise_levels:
+            new_params = copy(params)
+            new_params.append(("sigma", nl))
+            fixed_sweep.append(new_params)
+
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
-    for vars in sweeper.sweep():
+    for vars in fixed_sweep:
         for var, value in vars:
             args.__setattr__(var, value)
 

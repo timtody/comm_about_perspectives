@@ -585,6 +585,6 @@ def main(path_to_results: str, hparams: List[str]):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-19/13-06-50",
-        ["eta_lsa"],
+        "results/2021-05-20/21-26-45",
+        ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"],
     )
