@@ -128,7 +128,7 @@ if __name__ == "__main__":
     runner_args = RunnerCfg()
     args = parser.parse_args()
 
-    hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"]
+    hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma", "nagents"]
 
     sweep_root_path = generate_sweep_path(Experiment)
 
@@ -171,13 +171,16 @@ if __name__ == "__main__":
         ],
     ]
 
-    noise_levels = [0.0, 0.33, 0.67, 1.0]
+    noise_levels = [0.67]
+    n_agents = [3, 4, 5, 8]
     fixed_sweep = []
     for params in param_list:
         for nl in noise_levels:
-            new_params = copy(params)
-            new_params.append(("sigma", nl))
-            fixed_sweep.append(new_params)
+            for nag in n_agents:
+                new_params = copy(params)
+                new_params.append(("sigma", nl))
+                new_params.append(("nagents", nag))
+                fixed_sweep.append(new_params)
 
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     for vars in fixed_sweep:

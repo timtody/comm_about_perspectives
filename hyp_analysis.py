@@ -21,7 +21,7 @@ from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
 
-EPOCH = 34999.0
+EPOCH = 24999.0
 DATA_LEN = 9999
 # sns.set(style="whitegrid")
 
@@ -550,7 +550,9 @@ def main(path_to_results: str, hparams: List[str]):
     # df_acc = load_data_raw(path_to_results)
     # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
     # df_acc = df_acc[df_acc["Type"] == "Latent"]
-    # df_cross_acc = load_crs_acc_data(path_to_results)
+    df_cross_acc = load_crs_acc_data(path_to_results)
+    print(df_cross_acc.sort_values(by="Accuracy", ascending=False).head(100))
+    exit(1)
 
     df_acc = load_data_raw(path_to_results)
     compute_plots_latent(df_acc, hparams, path)
@@ -585,6 +587,6 @@ def main(path_to_results: str, hparams: List[str]):
 
 if __name__ == "__main__":
     main(
-        "results/2021-05-20/21-26-45",
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45",
         ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"],
     )
