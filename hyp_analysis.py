@@ -155,7 +155,7 @@ def load_data_raw(path):
             ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
         )
         df = df[(df["Metric"] == "Accuracy")]
-        df = series_to_mean(df, threshold=0)
+        df = series_to_mean(df, threshold=4000)
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
@@ -550,9 +550,9 @@ def main(path_to_results: str, hparams: List[str]):
     # df_acc = load_data_raw(path_to_results)
     # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
     # df_acc = df_acc[df_acc["Type"] == "Latent"]
-    df_cross_acc = load_crs_acc_data(path_to_results)
-    print(df_cross_acc.sort_values(by="Accuracy", ascending=False).head(100))
-    exit(1)
+    # df_cross_acc = load_crs_acc_data(path_to_results)
+    # print(df_cross_acc.sort_values(by="Accuracy", ascending=False).head(100))
+    # exit(1)
 
     df_acc = load_data_raw(path_to_results)
     compute_plots_latent(df_acc, hparams, path)
@@ -587,6 +587,6 @@ def main(path_to_results: str, hparams: List[str]):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45",
-        ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"],
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-23/22-13-46",
+        ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma", "nagents"],
     )

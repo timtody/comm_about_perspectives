@@ -13,7 +13,7 @@ from matplotlib.gridspec import GridSpec
 
 from scipy import stats
 
-EPOCH = 24999.0
+EPOCH = 19999.0
 hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"]
 
 path_perspective_msa = (
@@ -37,6 +37,36 @@ path_no_perspective_base = (
 # def series_to_mean(df, threshold=4000):
 #     groups = df.groupby(["Rank", "Metric", "Type", "Agent", "Epoch"], as_index=False)
 #     return groups.apply(lambda x: x[x["Step"] >= threshold].mean())
+
+
+def plot_over(set_params, by=None, ax=None, title="Title", path=""):
+    path_candidates = sorted(Path(path).glob("*"))
+    dfs = []
+    for path in path_candidates:
+        suffix = str(path).split("/")[-1]
+        params = stem_to_params(suffix)
+        passing = False
+        for p, v in set_params.items():
+            if params[p] != v:
+                passing = True
+        if not passing:
+            reader = TidyReader(str(path) + "/data")
+            df = reader.read(
+                "pred_from_latent",
+                ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
+            )
+            df[by] = params[by]
+            dfs.append(df)
+    df = pd.concat(dfs)
+    df = df[
+        (df["Epoch"] == EPOCH)
+        & (df["Metric"] == "Accuracy")
+        & (df["Type"] == "Latent")
+        & (df["Agent"] != "baseline_1")
+        & (df["Agent"] != "baseline_2")
+    ]
+    df["Title"] = title
+    return df
 
 
 def plot_over_noise(set_params, ax=None, title="Title"):
@@ -126,9 +156,11 @@ def load_df_and_params(
 #     return pd.concat(dfs)
 
 
-def series_to_mean(df, threshold=4000):
-    groups = df.groupby(["Rank", "Metric", "Type", "Agent", "Epoch"], as_index=False)
-    return groups.apply(lambda x: x[x["Step"] >= threshold].mean())
+def series_to_mean(df, threshold=4800, add_params=[]):
+    groups = df.groupby(
+        ["Rank", "Metric", "Type", "Agent", "Epoch", *add_params], as_index=False
+    )
+    return groups.apply(lambda x: x[x["Step"] >= threshold])
 
 
 def prepare_df(path: str):
@@ -266,12 +298,23 @@ if __name__ == "__main__":
         title="Plot 1",
         ax=ax2,
     )
-    df_noise_2 = plot_over_noise(
-        {"eta_ae": "0.53", "eta_msa": "0.74", "eta_lsa": "0.01", "eta_dsa": "0.84"},
-        title="Plot 2",
-        ax=ax3,
+
+    print(df_noise)
+    df_noise = series_to_mean(df_noise, add_params=["sigma", "Title"])
+    print(df_noise)
+
+    df_nagents = plot_over(
+        {"eta_ae": "0.0", "eta_msa": "1.0", "eta_lsa": "0.0", "eta_dsa": "0.0"},
+        by="nagents",
+        path="results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-23/22-13-46",
     )
-    sns.lineplot(
+    print(df_nagents)
+    df_nagents["nagents"] = df_nagents["nagents"].map(str)
+    print(df_nagents)
+    df_nagents = series_to_mean(df_nagents, add_params=["nagents", "Title"])
+    print(df_nagents)
+
+    lineax = sns.lineplot(
         data=df_noise,
         x="sigma",
         y="Value",
@@ -280,20 +323,25 @@ if __name__ == "__main__":
         markers=True,
         dashes=False,
         style="Title",
+        legend=False,
         err_kws=dict(
             capsize=3,
             capthick=2,
         ),
     )
+    lineax.set_xlabel(r"Noise level ($\sigma$)")
+    lineax.set_ylabel("Accuracy")
+
     sns.lineplot(
-        data=df_noise_2,
-        x="sigma",
+        data=df_nagents,
+        x="nagents",
         y="Value",
         ax=ax3,
         err_style="bars",
         markers=True,
         dashes=False,
         style="Title",
+        legend=False,
         err_kws=dict(
             capsize=3,
             capthick=2,
@@ -309,9 +357,13 @@ if __name__ == "__main__":
         ci="sd",
         edgecolor=".2",
         capsize=0.01,
-        errwidth=2.5,
+        errwidth=1.5,
         ax=ax1,
     )
+    ax1.set_ylabel(r"Accuracy (\%)")
+    ax2.set_ylabel(r"Accuracy (\%)")
+    ax3.set_ylabel(r"Accuracy (\%)")
+    ax3.set_xlabel("N agents")
     change_width(ax1, 0.35)
     sns.despine(ax=ax1)
     sns.despine(ax=ax2)
