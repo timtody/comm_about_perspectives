@@ -313,23 +313,23 @@ class Experiment(BaseExperiment):
                 loss_latent = mlp.train(latent, labels)
                 acc_latent = mlp.compute_acc(latent, labels)
 
-                loss_rec = mlp_rec.train(reconstruction, labels)
-                acc_rec = mlp_rec.compute_acc(reconstruction, labels)
+                # loss_rec = mlp_rec.train(reconstruction, labels)
+                # acc_rec = mlp_rec.compute_acc(reconstruction, labels)
 
                 if i % 50 == 0:
                     self.tb.add_scalar(
                         f"acc_from_latent_{agent.name}_epoch_{step}", acc_latent, i
                     )
-                    self.tb.add_scalar(
-                        f"acc_from_rec_{agent.name}_epoch_{step}", acc_rec, i
-                    )
+                    # self.tb.add_scalar(
+                    #    f"acc_from_rec_{agent.name}_epoch_{step}", acc_rec, i
+                    # )
 
                     self.writer.add_multiple(
                         [
                             (i, loss_latent, "Loss", "Latent", agent.name),
                             (i, acc_latent, "Accuracy", "Latent", agent.name),
-                            (i, loss_rec, "Loss", "Reconstruction", agent.name),
-                            (i, acc_rec, "Accuracy", "Reconstruction", agent.name),
+                            # (i, loss_rec, "Loss", "Reconstruction", agent.name),
+                            # (i, acc_rec, "Accuracy", "Reconstruction", agent.name),
                         ],
                         step=step,
                         tag="pred_from_latent",
