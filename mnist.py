@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import torchvision
 from six.moves import urllib
+from torchvision.datasets.mnist import MNIST
+import matplotlib.pyplot as plt
 
 opener = urllib.request.build_opener()
 opener.addheaders = [("User-agent", "Mozilla/5.0")]
@@ -17,6 +19,11 @@ class MNISTDataset:
             "data/mnist",
             download=True,
         )
+        self.train_set = dataset
+        self.test_set = torchvision.datasets.MNIST(
+            "data/mnist", download=True, train=False
+        )
+
         self.dataset = dataset
         self.transform = lambda x: x / 255.0
         self._train, self._test = self.build_train_and_test_set(
@@ -25,13 +32,17 @@ class MNISTDataset:
         self._data_dict_train = self.build_dict_and_maybe_dataset(dataset)
         # self._data_dict_test = self.build_dict_and_maybe_dataset(dataset, train=False)
 
-    def sample_with_label(self, bsize):
-        indices = np.random.randint(len(self.images), size=bsize)
-        images = self.transform(torch.stack([self.images[i] for i in indices])).reshape(
-            -1, 1, 28, 28
-        )
-        labels = torch.tensor([self.labels[i] for i in indices])
-        return images, labels
+    def sample_with_label(self, bsize, eval=False):
+        if eval:
+            indices = np.random.randint(len(self.test_set.data), size=bsize)
+            images = self.transform(self.test_set.data[indices].unsqueeze(1))
+            targets = self.test_set.targets[indices]
+            return images, targets
+        else:
+            indices = np.random.randint(len(self.train_set.data), size=bsize)
+            images = self.transform(self.train_set.data[indices].unsqueeze(1))
+            targets = self.train_set.targets[indices]
+            return images, targets
 
     def build_dict_and_maybe_dataset(self, dataset, train=True) -> dict:
         """Builds the dictionary of MNIST data and sorts all
@@ -126,3 +137,18 @@ class MNISTDataset:
             int: The amount of elements in self._train
         """
         return len(self._train.data)
+
+
+if __name__ == "__main__":
+    ds = MNISTDataset()
+    ims, labels = ds.sample_with_label(10, eval=False)
+    for im, label in zip(ims, labels):
+        plt.imshow(im.reshape(28, 28))
+        print(label)
+        plt.show()
+
+    ims, labels = ds.sample_with_label(10, eval=True)
+    for im, label in zip(ims, labels):
+        plt.imshow(im.reshape(28, 28))
+        print(label)
+        plt.show()

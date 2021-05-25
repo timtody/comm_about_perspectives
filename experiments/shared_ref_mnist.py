@@ -146,7 +146,7 @@ class Experiment(BaseExperiment):
             self.cfg.affine,
             self.cfg.lr,
             name,
-            pre_latent_dim=49 if self.cfg.dataset == "MNIST" else 64,
+            pre_latent_dim=36 if self.cfg.dataset == "MNIST" else 64,
         ).to(self.dev)
 
     def sync_ae_step(self, step: int, agent_a: AutoEncoder, agent_b: AutoEncoder):
@@ -298,9 +298,13 @@ class Experiment(BaseExperiment):
         self, agents: List[AutoEncoder], step: int
     ) -> None:
         mlps = []
+        test_ims, test_targets = map(
+            lambda x: x.to(self.dev),
+            self.dataset.sample_with_label(self.cfg.bsize_pred_latent, eval=True),
+        )
         for agent in agents:
             mlp: MLP = MLP(self.cfg.latent_dim).to(self.dev)
-            mlp_rec: CNN = CNN().to(self.dev)
+            # mlp_rec: CNN = CNN().to(self.dev)
 
             for i in range(self.cfg.nsteps_pred_latent):
                 ims, labels = map(
@@ -308,10 +312,11 @@ class Experiment(BaseExperiment):
                     self.dataset.sample_with_label(self.cfg.bsize_pred_latent),
                 )
                 latent = agent.encode(ims)
-                reconstruction = agent(ims)
+                # reconstruction = agent(ims)
 
                 loss_latent = mlp.train(latent, labels)
                 acc_latent = mlp.compute_acc(latent, labels)
+                test_acc_latent = mlp.compute_acc(agent.encode(test_ims), test_targets)
 
                 # loss_rec = mlp_rec.train(reconstruction, labels)
                 # acc_rec = mlp_rec.compute_acc(reconstruction, labels)
@@ -328,6 +333,7 @@ class Experiment(BaseExperiment):
                         [
                             (i, loss_latent, "Loss", "Latent", agent.name),
                             (i, acc_latent, "Accuracy", "Latent", agent.name),
+                            (i, test_acc_latent, "Test accuracy", "Latent", agent.name)
                             # (i, loss_rec, "Loss", "Reconstruction", agent.name),
                             # (i, acc_rec, "Accuracy", "Reconstruction", agent.name),
                         ],
