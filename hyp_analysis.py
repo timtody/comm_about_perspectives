@@ -1,5 +1,6 @@
 from io import DEFAULT_BUFFER_SIZE
 import itertools
+from operator import add
 import os
 import string
 from pathlib import Path, PosixPath
@@ -21,9 +22,12 @@ from autoencoder import AutoEncoder
 from chunked_writer import TidyReader
 from mnist import MNISTDataset
 
-EPOCH = 24999.0
+from plotting_helpers import set_size, set_tex_fonts, set_palette
+
+
+EPOCH = 39999.0
 DATA_LEN = 9999
-# sns.set(style="whitegrid")
+sns.set_palette(sns.color_palette("Set1"))
 
 
 def load_df_and_params(
@@ -177,22 +181,24 @@ def load_loss_data(path, threshold=2000):
         )
         groups = df.groupby(["Type", "Agent_i"], as_index=False)
         df = groups.apply(
-            lambda x: x[x["Step"] >= 45000].drop(axis=1, labels="Agent_j").mean()
+            lambda x: x[x["Step"] >= 35000].drop(axis=1, labels="Agent_j").mean()
         )
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
         if i > DATA_LEN:
             break
+
     return pd.concat(dfs)
 
 
 def load_acc_data(path):
-    paths = Path(path).glob("*")
+    paths = Path(path).glob("eta_lsa:0.3*")
     dfs = []
     i = 0
     for path in paths:
         i += 1
+        print(path)
         df, params = load_df_and_params(
             path,
             "cross_agent_acc",
@@ -479,21 +485,23 @@ def compute_and_save_cov_matrix(
             "eta_ae",
             "sigma",
             "Accuracy",
-            "Swap_diff",
+            # "Swap_diff",
             "Cross_acc",
-            "AE",
-            "LSA",
-            "DSA",
-            "MSA",
-            "DECDIFF",
-            "MBVAR",
-            "LSA-MBVAR",
+            # "AE",
+            # "LSA",
+            # "DSA",
+            # "MSA",
+            # "DECDIFF",
+            # "MBVAR",
+            # "LSA-MBVAR",
         ]
     ]
-    pivot_table.rename(columns={"LSA-MBVAR": "LSA/MBVAR"}, inplace=True)
+    print(pivot_table)
+    # pivot_table.rename(columns={"LSA-MBVAR": "LSA/MBVAR"}, inplace=True)
 
     corr = pivot_table.corr()
     corr.to_csv(f"{plt_base_path}/{agent}_corr.csv")
+    corr.to_latex(f"{plt_base_path}/{agent}_corr.tex")
     mask = np.triu(np.ones_like(corr, dtype=bool))
 
     # Set up the matplotlib figure
@@ -523,6 +531,36 @@ def compute_and_save_cov_matrix(
     plt.savefig(plt_base_path + f"/{agent}.png")
 
 
+def plot_over(set_params, by=None, ax=None, title="Title", path=""):
+    path_candidates = sorted(Path(path).glob("*"))
+    dfs = []
+    for path in path_candidates:
+        suffix = str(path).split("/")[-1]
+        params = stem_to_params(suffix)
+        passing = False
+        for p, v in set_params.items():
+            if params[p] != v:
+                passing = True
+        if not passing:
+            reader = TidyReader(str(path) + "/data")
+            df = reader.read(
+                "pred_from_latent",
+                ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
+            )
+            df[by] = params[by]
+            dfs.append(df)
+    df = pd.concat(dfs)
+    df = df[
+        (df["Epoch"] == EPOCH)
+        & (df["Metric"] == "Accuracy")
+        & (df["Type"] == "Latent")
+        & (df["Agent"] != "baseline_1")
+        & (df["Agent"] != "baseline_2")
+    ]
+    df["Title"] = title
+    return df
+
+
 def compute_cross_accuracy(path_to_results: str, hparams: "list[list]", plot_path: str):
     df_cross_acc: DataFrame = load_acc_data(path_to_results)
     df_cross_acc = df_cross_acc.groupby([*hparams, "Tag"], as_index=False).agg(
@@ -537,6 +575,128 @@ def load_crs_acc_data(path: str) -> DataFrame:
     return load_acc_data(path)
 
 
+def save_cross_acc_data(df, hparams, path_to_plot=""):
+    fig_w, fig_h = set_size("neurips", fraction=0.98, subplots=(1, 2))
+
+    set_palette()
+    set_tex_fonts()
+
+    fig = plt.figure(constrained_layout=True, figsize=(fig_w, fig_h))
+
+    gs = fig.add_gridspec(1, 2)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1])
+    axes = [ax1, ax2]
+
+    try:
+        df = pd.read_csv("12plots/swap_acc_over_noise.csv")
+        df_new = pd.read_csv("plots/swap_acc_base_vs_msa.csv")
+    except Exception as e:
+        print(e)
+        params = {"eta_ae": "0.0", "eta_lsa": "0.0", "eta_msa": "1", "eta_dsa": "0.0"}
+
+        df_pre = df
+        df = df[(df["Tag"] != "Base") & (df["Epoch"] == EPOCH)]
+        df_pre = df_pre[(df_pre["Tag"] != "Base") & (df_pre["Epoch"] == EPOCH)]
+        ## compute the mean across ranks and agents to arrive at 1 acc. value per set of hparams
+        # df: DataFrame = df.groupby(hparams, as_index=False).mean()
+        print(df)
+        # df_reduced = df_pre.groupby(
+        #    ["eta_ae", "eta_msa", "eta_lsa", "eta_dsa"], as_index=False
+        # ).mean()
+        df_reduced = df_pre
+        print(df_reduced)
+
+        df_msa = df_reduced[df_reduced["eta_msa"] == "1"]
+        df_msa["Type"] = "MTI"
+
+        df_mix = df_reduced[
+            (df_reduced["eta_msa"] == "0.74") & (df_reduced["eta_ae"] == "0.53")
+        ]
+        df_mix["Type"] = "Mix"
+
+        df_base = df_reduced[df_reduced["eta_ae"] == "1"]
+        df_base["Type"] = "Base"
+
+        df_new = pd.concat([df_msa, df_base, df_mix])
+        print(df_new)
+        for key, value in params.items():
+            df = df[df[key] == value]
+
+    sns.barplot(
+        data=df_new,
+        x="Type",
+        y="Accuracy",
+        ci="sd",
+        edgecolor=".2",
+        capsize=0.01,
+        errwidth=1.5,
+        ax=axes[0],
+        order=["MTI", "Mix", "Base"],
+    )
+    df["sigma"] = df["sigma"].astype(str)
+    sns.lineplot(
+        data=df.sort_values(by="sigma"),
+        x="sigma",
+        y="Accuracy",
+        ax=axes[1],
+        err_style="bars",
+        markers=True,
+        dashes=False,
+        style="Epoch",
+        legend=False,
+        err_kws=dict(
+            capsize=3,
+            capthick=2,
+        ),
+    )
+
+    try:
+        df.to_csv("plots/swap_acc_over_noise.csv")
+        df_new.to_csv("plots/swap_acc_base_vs_msa.csv")
+    except:
+        pass
+
+    for ax in axes:
+        sns.despine(ax=ax)
+
+    hatches = ["/", r"\\", "X"]
+    for hatch, patch in zip(hatches, axes[0].patches):
+        patch.set_hatch(hatch)
+
+    from statannot import add_stat_annotation
+
+    print(df_new)
+    df_new = df_new.groupby(
+        ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma", "Type"], as_index=False
+    ).mean()
+    print(df_new)
+    add_stat_annotation(
+        ax1,
+        data=df_new,
+        x="Type",
+        y="Accuracy",
+        order=["MTI", "Mix", "Base"],
+        test="t-test_welch",
+        box_pairs=[("MTI", "Mix"), ("Mix", "Base")],
+    )
+
+    axes[1].set_xlabel(r"Noise level ($\sigma$)")
+    axes[0].set_xlabel("Config")
+    # axes[0].set_xticklabels(["Multi", "Single"])
+    axes[0].set_ylabel("Swap acc. (\%)")
+
+    fig.savefig("swap_acc_and_noise_baseline.pdf", format="pdf", bbox_inches="tight")
+    exit(1)  # write to latex before regressing
+    # this contains a table of all parameters
+    with open(f"{path_to_plot}/cross_table_view.txt", "w") as f:
+        f.writelines(
+            groups.drop(["Epoch", "Rank"], axis=1)
+            .sort_values(by="Accuracy", ascending=False)
+            .to_latex()
+        )
+
+
 def main(path_to_results: str, hparams: List[str]):
     # if not os.path.exists("plots/" + path_to_plot):
     #     os.makedirs("plots/" + path_to_plot)
@@ -546,17 +706,19 @@ def main(path_to_results: str, hparams: List[str]):
 
     # compute_cross_accuracy(path_to_results, hparams, path)
 
-    # # df_loss = load_loss_data(path_to_results)
+    # df_loss = load_loss_data(path_to_results)
     # df_acc = load_data_raw(path_to_results)
     # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
     # df_acc = df_acc[df_acc["Type"] == "Latent"]
-    # df_cross_acc = load_crs_acc_data(path_to_results)
+    df_cross_acc = load_crs_acc_data(path_to_results)
+    save_cross_acc_data(df_cross_acc, hparams, path_to_plot=path)
+    exit(1)
     # print(df_cross_acc.sort_values(by="Accuracy", ascending=False).head(100))
     # exit(1)
 
-    df_acc = load_data_raw(path_to_results)
-    compute_plots_latent(df_acc, hparams, path)
-    compute_plots_rec(df_acc, hparams, path)
+    # df_acc = load_data_raw(path_to_results)
+    # compute_plots_latent(df_acc, hparams, path)
+    # compute_plots_rec(df_acc, hparams, path)
 
     name_of_best_exp = "sigma:0.0-eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-"
 
@@ -577,9 +739,10 @@ def main(path_to_results: str, hparams: List[str]):
     # plot_reconstruction_sim_measure(path_to_results, name_of_best_exp, path_to_plot)
 
     # # covariance matric between hparams and losses (final?)
-    # compute_and_save_cov_matrix(
-    #     df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
-    # )
+    print(df_loss)
+    compute_and_save_cov_matrix(
+        df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="ma"
+    )
     # compute_and_save_cov_matrix(
     #     df_loss, df_acc, df_cross_acc, hparams, path_to_results, agent="baseline"
     # )
@@ -587,6 +750,6 @@ def main(path_to_results: str, hparams: List[str]):
 
 if __name__ == "__main__":
     main(
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-23/22-13-46",
-        ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma", "nagents"],
+        "results/nagents",
+        ["eta_lsa","nagents"],
     )
