@@ -64,21 +64,15 @@ class Experiment(BaseExperiment):
             mlp = self.train_classifier(agent)
             mlps.append(mlp)
         self.compute_cross_agent_cls(agents, mlps)
-        print("Done!")
 
     def load_aes(self, path: str) -> List[AutoEncoder]:
         autoencoders = [
-            AutoEncoder(30, bnorm=False, affine=False, name=name, lr=0.001)
+            AutoEncoder(30, False, False, 0.001, name)
             for name in string.ascii_uppercase[:3]
         ]
-        base1 = AutoEncoder(
-            30, bnorm=False, affine=False, name="baseline", lr=0.001
-        ).to(self.dev)
-        base2 = AutoEncoder(
-            30, bnorm=False, affine=False, name="baseline", lr=0.001
-        ).to(self.dev)
+        base1 = AutoEncoder(30, False, False, 0.001, "baseline1").to(self.dev)
+        base2 = AutoEncoder(30, False, False, 0.001, "baseline2").to(self.dev)
         baselines = [base1, base2]
-        print(self.dev)
 
         for agent in autoencoders:
             agent.load_state_dict(

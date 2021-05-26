@@ -1,4 +1,4 @@
-import random
+import os
 import string
 from typing import Any, List, NamedTuple
 
@@ -29,32 +29,41 @@ class Config(NamedTuple):
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
-        path = (
-            f"results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-16/13-15-58/"
-            f"sigma:0-eta_lsa:0-eta_msa:1-eta_dsa:0-eta_ae:0-/params/step_49999/rank_{self.rank % 3}"
-        )
-        path = cfg.path + f"/params/step_39999/rank_{self.rank % 3}"
-        dataset = MNISTDataset()
-        all_agents: List[AutoEncoder] = self._load_aes(path)
 
-        mlps: List[MLP] = [MLP(30) for _ in all_agents]
+        base_path = os.path.join(os.path.expandvars("$SCRATCH"), "results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/")
+        # base_path = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/"
 
-        for mlp, agent in zip(mlps, all_agents):
-            for i in range(cfg.nsteps):
-                ims, targets = dataset.sample_with_label(cfg.bsize)
-                encoding = agent.encode(ims)
-                encoding = encoding + torch.randn_like(encoding) * cfg.sigma
-                mlp.train(encoding, targets)
-                acc = mlp.compute_acc(encoding, targets)
-                self.writer.add(
-                    (
-                        self.rank,
-                        i,
-                        "MA" if agent.name != "baseline" else "Baseline",
-                        acc,
-                    ),
-                    step=i,
-                )
+        ae_path = os.path.join(base_path, "eta_ae:1-eta_lsa:0.0-eta_msa:0.0-eta_dsa:0.0-sigma:0.67-")
+        msa_path = os.path.join(base_path, "eta_ae:0.0-eta_lsa:0.0-eta_msa:1-eta_dsa:0.0-sigma:0.67-")
+        lsa_path = os.path.join(base_path, "eta_ae:0.53-eta_lsa:0.01-eta_msa:0.74-eta_dsa:0.84-sigma:0.33-")
+
+        paths = {"AE": ae_path, "MTI": msa_path, "AE-MTM": lsa_path}
+
+        for exp_name, path in paths.items():
+
+            path = path + f"/params/step_39999/rank_{self.rank % 3}"
+            dataset = MNISTDataset()
+            all_agents: List[AutoEncoder] = self._load_aes(path)
+
+            mlps: List[MLP] = [MLP(30) for _ in all_agents]
+
+            for mlp, agent in zip(mlps, all_agents):
+                for i in range(cfg.nsteps):
+                    ims, targets = dataset.sample_with_label(cfg.bsize)
+                    encoding = agent.encode(ims)
+                    encoding = encoding + torch.randn_like(encoding) * cfg.sigma
+                    mlp.train(encoding, targets)
+                    acc = mlp.compute_acc(encoding, targets)
+                    self.writer.add(
+                        (
+                            exp_name,
+                            self.rank,
+                            i,
+                            "MA" if agent.name != "baseline" else "Baseline",
+                            acc,
+                        ),
+                        step=i,
+                    )
 
     def _load_aes(self, path):
         autoencoders = [
