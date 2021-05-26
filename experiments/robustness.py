@@ -28,7 +28,7 @@ class Config(NamedTuple):
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
-        centralised = False
+        centralised = True
 
         if centralised:
             base_path = os.path.join(os.path.expandvars("$SCRATCH"),
