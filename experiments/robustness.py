@@ -19,7 +19,6 @@ class Config(NamedTuple):
     seed: int = 123
     nogpu: bool = False
     ngpus: int = 1
-    path: str = ""
     sigma: float = 0.0
     mp_method: str = "SLURM"
     gridsteps: int = 10

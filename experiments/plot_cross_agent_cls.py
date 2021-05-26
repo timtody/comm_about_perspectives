@@ -48,6 +48,9 @@ class Config(BaseConfig):
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
+
+        paths = []
+
         tb_path = f"{self.path}/tb/{self.rank}"
         self.tb = SummaryWriter(tb_path)
 
@@ -56,7 +59,7 @@ class Experiment(BaseExperiment):
             os.path.join(
                 self.path,
                 "params",
-                "step_49999",
+                "step_39999",
             )
         )
         mlps = []
