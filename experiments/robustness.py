@@ -15,7 +15,7 @@ from experiments.experiment import BaseExperiment
 
 
 class Config(NamedTuple):
-    nprocs: int = 5
+    nprocs: int = 10
     seed: int = 123
     nogpu: bool = False
     ngpus: int = 1
