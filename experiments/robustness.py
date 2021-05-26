@@ -23,6 +23,8 @@ class Config(NamedTuple):
     sigma: float = 0.0
     mp_method: str = "SLURM"
     gridsteps: int = 10
+    nsteps: int = 5000
+    bsize: int = 4092
 
 
 class Experiment(BaseExperiment):
@@ -31,17 +33,15 @@ class Experiment(BaseExperiment):
             f"results/jeanzay/results/sweeps/shared_ref_mnist/2021-04-16/13-15-58/"
             f"sigma:0-eta_lsa:0-eta_msa:1-eta_dsa:0-eta_ae:0-/params/step_49999/rank_{self.rank % 3}"
         )
-        path = cfg.path + f"/params/step_49999/rank_{self.rank % 5}"
+        path = cfg.path + f"/params/step_39999/rank_{self.rank % 3}"
         dataset = MNISTDataset()
         all_agents: List[AutoEncoder] = self._load_aes(path)
 
         mlps: List[MLP] = [MLP(30) for _ in all_agents]
-        bsize = 512
-        nsteps = 5000
 
         for mlp, agent in zip(mlps, all_agents):
-            for i in range(nsteps):
-                ims, targets = dataset.sample_with_label(bsize)
+            for i in range(cfg.nsteps):
+                ims, targets = dataset.sample_with_label(cfg.bsize)
                 encoding = agent.encode(ims)
                 encoding = encoding + torch.randn_like(encoding) * cfg.sigma
                 mlp.train(encoding, targets)
@@ -58,10 +58,10 @@ class Experiment(BaseExperiment):
 
     def _load_aes(self, path):
         autoencoders = [
-            AutoEncoder(30, bnorm=False, affine=False, name=name, lr=0.001)
+            AutoEncoder(30, False, False, 0.001, name)
             for name in string.ascii_uppercase[:3]
         ]
-        baseline = AutoEncoder(30, bnorm=False, affine=False, name="baseline", lr=0.001)
+        baseline = AutoEncoder(30, False, False, 0.001, "baseline")
 
         all_agents: List[AutoEncoder] = autoencoders + [baseline]
         [
@@ -71,6 +71,14 @@ class Experiment(BaseExperiment):
             for agent in all_agents
         ]
         return all_agents
+
+    @staticmethod
+    def load_data(reader) -> Any:
+        pass
+
+    @staticmethod
+    def plot(dataframes, plot_path) -> None:
+        pass
 
 
 class MLP(nn.Module):
