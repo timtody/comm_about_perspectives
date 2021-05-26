@@ -28,13 +28,22 @@ class Config(NamedTuple):
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
+        centralised = False
 
-        base_path = os.path.join(os.path.expandvars("$SCRATCH"), "results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/")
-        # base_path = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/"
+        if centralised:
+            base_path = os.path.join(os.path.expandvars("$SCRATCH"),
+                                     "results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/")
+            # base_path = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/"
 
-        ae_path = os.path.join(base_path, "eta_ae:1-eta_lsa:0.0-eta_msa:0.0-eta_dsa:0.0-sigma:0.67-")
-        msa_path = os.path.join(base_path, "eta_ae:0.0-eta_lsa:0.0-eta_msa:1-eta_dsa:0.0-sigma:0.67-")
-        lsa_path = os.path.join(base_path, "eta_ae:0.53-eta_lsa:0.01-eta_msa:0.74-eta_dsa:0.84-sigma:0.33-")
+            ae_path = os.path.join(base_path, "eta_ae:1-eta_lsa:0.0-eta_msa:0.0-eta_dsa:0.0-sigma:0.67-")
+            msa_path = os.path.join(base_path, "eta_ae:0.0-eta_lsa:0.0-eta_msa:1-eta_dsa:0.0-sigma:0.67-")
+            lsa_path = os.path.join(base_path, "eta_ae:0.53-eta_lsa:0.01-eta_msa:0.74-eta_dsa:0.84-sigma:0.33-")
+        else:
+            base_path = "results/gridsweep"
+
+            ae_path = os.path.join(base_path, "sigma:0.67-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.0-eta_dsa:0.0-")
+            msa_path = os.path.join(base_path, "sigma:0.67-eta_ae:0.0-eta_msa:1.0-eta_lsa:0.0-eta_dsa:0.0-")
+            lsa_path = os.path.join(base_path, "sigma:0.33-eta_ae:0.67-eta_msa:0.67-eta_lsa:0.0-eta_dsa:0.0-")
 
         paths = {"AE": ae_path, "MTI": msa_path, "AE-MTM": lsa_path}
 
@@ -55,6 +64,7 @@ class Experiment(BaseExperiment):
                     acc = mlp.compute_acc(encoding, targets)
                     self.writer.add(
                         (
+                            centralised,
                             exp_name,
                             self.rank,
                             i,
