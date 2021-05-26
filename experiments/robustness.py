@@ -13,16 +13,16 @@ from mnist import MNISTDataset
 
 from experiments.experiment import BaseExperiment
 
-sns.set(style="whitegrid")
-
 
 class Config(NamedTuple):
-    nprocs: int = 3
+    nprocs: int = 5
     seed: int = 123
     nogpu: bool = False
     ngpus: int = 1
     path: str = ""
     sigma: float = 0.0
+    mp_method: str = "SLURM"
+    gridsteps: int = 10
 
 
 class Experiment(BaseExperiment):
@@ -71,28 +71,6 @@ class Experiment(BaseExperiment):
             for agent in all_agents
         ]
         return all_agents
-
-    @staticmethod
-    def plot(df, plot_path) -> None:
-        df.loc[df.Agent == "MARL", "Agent"] = "MA"
-        df.to_csv(plot_path + "/results.csv")
-        sns.lineplot(
-            data=df,
-            x="Step",
-            y="Accuracy",
-            style="Agent",
-            dashes=False,
-            markers=True,
-            hue="Agent",
-        )
-        plt.savefig(plot_path + "/accuracy.pdf")
-        plt.savefig(plot_path + "/accuracy.svg")
-
-    @staticmethod
-    def load_data(reader) -> Any:
-        df = reader.read(columns=["Rank", "Step", "Agent", "Accuracy"])
-        df = df.groupby(["Agent"], as_index=False).apply(lambda x: x[::125])
-        return df
 
 
 class MLP(nn.Module):

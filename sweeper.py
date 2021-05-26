@@ -5,14 +5,15 @@ from typing import Generator
 
 class Sweeper:
     def __init__(
-        self,
-        sample_vars: "list[str]",
-        grid_vars: "list[str]",
-        nsamples: int,
-        gridsteps: int = 0,
-        ranges: "list[tuple]" = None,
-        mode: str = "grid",
-        warmup: bool = True,
+            self,
+            sample_vars: "list[str]" = None,
+            grid_vars: "list[str]" = None,
+            nsamples: int = 0,
+            gridsteps: int = 0,
+            ranges: "list[tuple]" = None,
+            mode: str = "grid",
+            warmup: bool = True,
+            grid_range: int = 1,
     ) -> None:
         if ranges is not None:
             assert len(vars) == len(
@@ -26,6 +27,7 @@ class Sweeper:
         self.gridsteps = gridsteps
         self.ranges = ranges
         self.warmup = warmup
+        self.grid_range = grid_range
 
     def sweep(self) -> Generator:
         if self.warmup:
@@ -72,6 +74,16 @@ class Sweeper:
             values = np.random.uniform(0, 1, len(self.vars))
             values = map(lambda x: round(x, 2), values)
             yield list(zip(self.vars, values))
+
+    def sweep_grid(self):
+        rounded_range = lambda: map(_round2, list(np.linspace(0, self.grid_range, self.gridsteps)))
+        grid_ranges = [rounded_range() for _ in self.grid_vars]
+        for vals in itertools.product(*grid_ranges):
+            yield list(zip(self.grid_vars, vals))
+
+
+def _round2(x):
+    return round(x, 2)
 
 
 if __name__ == "__main__":

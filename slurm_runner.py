@@ -23,7 +23,7 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
         f"#SBATCH -C v100-{runner_args.gb}g\n"
         f"#(use '-C v100-32g' for 32 GB GPUs only)\n"
         f"#SBATCH -A imi@{runner_args.gpu_or_cpu}\n"
-        f"#SBATCH --qos=qos_gpu-t4"
+        f"#SBATCH --qos={runner_args.qos}"
         f"#SBATCH --output={path}/out\n"
         f"#SBATCH --error={path}/err\n"
         f"#SBATCH --time={runner_args.time}\n"
