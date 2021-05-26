@@ -39,11 +39,14 @@ class Experiment(BaseExperiment):
             msa_path = os.path.join(base_path, "eta_ae:0.0-eta_lsa:0.0-eta_msa:1-eta_dsa:0.0-sigma:0.67-")
             lsa_path = os.path.join(base_path, "eta_ae:0.53-eta_lsa:0.01-eta_msa:0.74-eta_dsa:0.84-sigma:0.33-")
         else:
-            base_path = "results/gridsweep"
+            base_path = os.path.expandvars("$SCRATCH")
 
-            ae_path = os.path.join(base_path, "sigma:0.67-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.0-eta_dsa:0.0-")
-            msa_path = os.path.join(base_path, "sigma:0.67-eta_ae:0.0-eta_msa:1.0-eta_lsa:0.0-eta_dsa:0.0-")
-            lsa_path = os.path.join(base_path, "sigma:0.33-eta_ae:0.67-eta_msa:0.67-eta_lsa:0.0-eta_dsa:0.0-")
+            ae_path = os.path.join(base_path, "results/sweeps/shared_ref_mnist/2021-05-16/"
+                                              "13-09-07/sigma:0.67-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.0-eta_dsa:0.0-")
+            msa_path = os.path.join(base_path, "results/sweeps/shared_ref_mnist/2021-05-16/"
+                                               "13-09-07/sigma:0.67-eta_ae:0.0-eta_msa:1.0-eta_lsa:0.0-eta_dsa:0.0-")
+            lsa_path = os.path.join(base_path, "results/sweeps/shared_ref_mnist/2021-05-15/"
+                                               "13-21-57/sigma:0.33-eta_ae:0.67-eta_msa:0.67-eta_lsa:0.0-eta_dsa:0.0-")
 
         paths = {"AE": ae_path, "MTI": msa_path, "AE-MTM": lsa_path}
 
