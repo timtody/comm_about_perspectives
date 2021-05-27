@@ -24,13 +24,13 @@ class Config(NamedTuple):
     gridsteps: int = 10
     nsteps: int = 5000
     bsize: int = 4092
+    centralised: bool = False
 
 
 class Experiment(BaseExperiment):
     def run(self, cfg: Config):
-        centralised = False
 
-        if centralised:
+        if cfg.centralised:
             base_path = os.path.join(os.path.expandvars("$SCRATCH"),
                                      "results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/")
             # base_path = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45/"
@@ -76,6 +76,7 @@ class Experiment(BaseExperiment):
                         ),
                         step=i,
                     )
+            self.writer._write()
 
     def _load_aes(self, path):
         autoencoders = [
