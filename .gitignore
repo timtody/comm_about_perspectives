@@ -2,6 +2,6 @@
 results/
 __pycache__/
 data/
-plots.ipynb
+plots/plots.ipynb
 plots/
 *.pdf

@@ -34,6 +34,7 @@ class ClutterDataset:
         subset_len = len(self.train.dict[digit])
         indices = np.random.randint(subset_len, size=bsize) % subset_len
         return self.transform(self.train.dict[digit][indices])
+        
 
     def sample_all_digits_once(self) -> torch.Tensor:
         # TODO: Implement
