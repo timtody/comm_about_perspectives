@@ -5,15 +5,15 @@ from argparse import ArgumentParser
 from typing import NamedTuple
 
 
-from experiments.robustness import Experiment
+from experiments.convergence import Experiment
+from experiments.convergence import Config
+
 from functions import (
     create_exp_name_and_datetime_path,
     merge_cfg_with_cli,
     run_single_from_sweep_mp,
 )
 from sweeper import Sweeper
-
-from experiments.robustness import Config
 from slurm_runner import run_single_from_sweep_slurm
 
 

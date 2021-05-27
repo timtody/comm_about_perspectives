@@ -193,12 +193,11 @@ def load_loss_data(path, threshold=2000):
 
 
 def load_acc_data(path):
-    paths = Path(path).glob("eta_lsa:0.3*")
+    paths = Path(path).glob("*")
     dfs = []
     i = 0
     for path in paths:
         i += 1
-        print(path)
         df, params = load_df_and_params(
             path,
             "cross_agent_acc",
@@ -711,7 +710,11 @@ def main(path_to_results: str, hparams: List[str]):
     # df_acc = df_acc[df_acc["Epoch"] == EPOCH]
     # df_acc = df_acc[df_acc["Type"] == "Latent"]
     df_cross_acc = load_crs_acc_data(path_to_results)
-    save_cross_acc_data(df_cross_acc, hparams, path_to_plot=path)
+    df_cross_acc = df_cross_acc[df_cross_acc["Epoch"] == 39999]
+    df_cross_acc = df_cross_acc[df_cross_acc["Tag"] == "MA"]
+    df = df_cross_acc.groupby([*hparams]).mean()
+    print(df.sort_values(by="Accuracy", ascending=False).head(50))
+    # save_cross_acc_data(df_cross_acc, hparams, path_to_plot=path)
     exit(1)
     # print(df_cross_acc.sort_values(by="Accuracy", ascending=False).head(100))
     # exit(1)
@@ -750,6 +753,6 @@ def main(path_to_results: str, hparams: List[str]):
 
 if __name__ == "__main__":
     main(
-        "results/nagents",
-        ["eta_lsa","nagents"],
+        "results/gridsweep",
+        ["sigma", "eta_ae", "eta_lsa", "eta_msa", "eta_dsa"],
     )
