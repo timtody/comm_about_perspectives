@@ -67,7 +67,7 @@ class Experiment(BaseExperiment):
                     acc = mlp.compute_acc(encoding, targets)
                     self.writer.add(
                         (
-                            centralised,
+                            cfg.centralised,
                             exp_name,
                             self.rank,
                             i,
@@ -76,7 +76,7 @@ class Experiment(BaseExperiment):
                         ),
                         step=i,
                     )
-            self.writer._write()
+                self.writer._write()
 
     def _load_aes(self, path):
         autoencoders = [
