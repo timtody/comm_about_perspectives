@@ -11,7 +11,5 @@ We link emergent multi-agent communication with representation learning. Using d
 
 **Significance:** We believe that the link between multi-agent learning and representation learning is a promising one and rsearchers have so far only scratched the surface.
 
-## Results
-<img src="prod/swap.png" alt="drawing" width="500"/>
 
-<img src="prod/persp.png" alt="drawing" width="500"/>
+For more information, please have a look at our paper!
