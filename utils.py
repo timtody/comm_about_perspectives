@@ -1,7 +1,16 @@
 import os
-from pathlib import PosixPath
+from pathlib import PosixPath, Path
 from chunked_writer import TidyReader
 from typing import List
+import pandas as pd
+
+
+def series_to_mean(df, threshold=4800, add_params=()):
+    df = df[df["Step"] > threshold]
+    groups = df.groupby(
+        ["Rank", "Metric", "Type", "Agent", "Epoch", *add_params], as_index=False
+    ).mean()
+    return groups
 
 
 def stem_to_params(stem: str):
@@ -40,4 +49,52 @@ def load_df_and_params(
     """
     reader = TidyReader(os.path.join(posixpath, datafolder))
     df = reader.read(tag=tag, columns=columns)
+    params = stem_to_params(posixpath.name)
+    return df, params
+
+
+def load_data(path, tag, keys, stop_after=None):
+    paths = Path(path).glob("*")
+    dfs = []
+    i = 0
+    for path in paths:
+        i += 1
+        df, params = load_df_and_params(path, tag, keys)
+        for param, value in params.items():
+            df[param] = value
+        dfs.append(df)
+        if stop_after is not None:
+            if i > stop_after:
+                break
+
+    return pd.concat(dfs)
+
+
+def plot_over(set_params, by=None, ax=None, title="Title", path=""):
+    path_candidates = sorted(Path(path).glob("*"))
+    dfs = []
+    for path in path_candidates:
+        suffix = str(path).split("/")[-1]
+        params = stem_to_params(suffix)
+        passing = False
+        for p, v in set_params.items():
+            if params[p] != v:
+                passing = True
+        if not passing:
+            reader = TidyReader(str(path) + "/data")
+            df = reader.read(
+                "pred_from_latent",
+                ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
+            )
+            df[by] = params[by]
+            dfs.append(df)
+    df = pd.concat(dfs)
+    df = df[
+        (df["Epoch"] == 39999)
+        & (df["Metric"] == "Accuracy")
+        & (df["Type"] == "Latent")
+        & (df["Agent"] != "baseline_1")
+        & (df["Agent"] != "baseline_2")
+    ]
+    df["Title"] = title
     return df

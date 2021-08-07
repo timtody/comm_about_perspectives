@@ -59,8 +59,11 @@ class Experiment(BaseExperiment):
                 lsa_path = os.path.join(base_path, "shared_ref_mnist/2021-05-15/"
                                                    "13-21-57/"
                                                    "sigma:0.33-eta_ae:0.67-eta_msa:0.67-eta_lsa:0.0-eta_dsa:0.0-")
+                msa_ae_path = os.path.join(base_path, "shared_ref_mnist/2021-05-15/"
+                                                      "13-21-57/"
+                                                      "sigma:0.67-eta_ae:1.0-eta_msa:1.0-eta_lsa:0.0-eta_dsa:0.0-")
 
-        paths = {"AE-MTI": msa_ae_path, "AE": ae_path, "MTI": msa_path, "AE-MTM": lsa_path}
+        paths = {"AE": ae_path, "MTI": msa_path, "AE-MTM": lsa_path}
 
         dataset = MNISTDataset()
         self.dataset = dataset

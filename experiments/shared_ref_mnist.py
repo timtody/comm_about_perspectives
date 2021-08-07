@@ -2,7 +2,7 @@ import itertools
 import os
 import random
 import string
-from typing import AnyStr, List, NamedTuple
+from typing import List, NamedTuple
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -20,6 +20,7 @@ from torch.utils.tensorboard import SummaryWriter
 from experiments.experiment import BaseExperiment
 
 eps = 0.0001
+
 
 
 class Config(NamedTuple):
@@ -139,7 +140,7 @@ class Experiment(BaseExperiment):
         for agent in agents:
             torch.save(agent.state_dict(), os.path.join(path, f"{agent.name}.pt"))
 
-    def generate_autoencoder(self, name: str):
+    def generate_autoencoder(self, name: str,):
         return AutoEncoder(
             self.cfg.latent_dim,
             self.cfg.bnorm,
@@ -394,8 +395,6 @@ class MLP(nn.Module):
         loss.backward()
         self.opt.step()
         return loss.item()
-
-
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()
@@ -417,7 +416,7 @@ class CNN(nn.Module):
         acc = (pred == labels).float().mean()
         return acc.item()
 
-    def train(self, inputs, targets):
+    def train(self, inputs: list, targets):
         x = self(inputs)
         loss = F.cross_entropy(x, targets)
         self.opt.zero_grad()

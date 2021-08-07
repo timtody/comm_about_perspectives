@@ -23,7 +23,7 @@ class Config(NamedTuple):
     mp_method: str = "SLURM"
     gridsteps: int = 10
     nsteps: int = 5000
-    bsize: int = 4092
+    bsize: int = 4092 
     centralised: bool = False
 
 

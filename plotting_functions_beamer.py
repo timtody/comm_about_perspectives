@@ -112,8 +112,8 @@ def set_hatches_on_ax(ax):
         patch.set_hatch(next(hatches))
 
 
-def get_fig(subplots, size="neurips"):
-    fig_w, fig_h = set_size(size, subplots=subplots, height_multiplier=1.4)
+def get_fig(subplots, size="neurips", fraction=0.95, height_multiplier=1.4):
+    fig_w, fig_h = set_size(size, fraction=fraction, subplots=subplots, height_multiplier=height_multiplier)
     fig = plt.figure(constrained_layout=True, figsize=(fig_w, fig_h))
     return fig
 
@@ -187,18 +187,20 @@ def plot_swap_acc(ax, path, parameter_configs):
                 edgecolor=".2",
                 capsize=0.01,
                 errwidth=1.5,
+                order=["Yes", "No"]
                 )
-    add_stat_annotation(ax,
-
-                        data=data,
-                        x="Agent",
-                        y="Swap acc.",
-                        test="t-test_welch",
-                        line_height=0.02,
-                        line_offset_to_box=0.04,
-                        box_pairs=[
-                            ("DTI", "AE+MTM")
-                        ])
+    ax.set_xlabel("Communication")
+    # add_stat_annotation(ax,
+    #
+    #                     data=data,
+    #                     x="Agent",
+    #                     y="Swap acc.",
+    #                     test="t-test_welch",
+    #                     line_height=0.02,
+    #                     line_offset_to_box=0.04,
+    #                     box_pairs=[
+    #                         ("Multi", "AE+MTM")
+    #                     ])
 
 
 def plot_agreement(ax, path):
@@ -211,17 +213,18 @@ def plot_agreement(ax, path):
                 edgecolor=".2",
                 capsize=0.01,
                 errwidth=1.5,
+                order=["Yes", "No"]
                 )
-    add_stat_annotation(ax,
-                        data=data,
-                        x="Agent",
-                        y="Agreement",
-                        test="t-test_welch",
-                        line_height=0.02,
-                        line_offset_to_box=0.04,
-                        box_pairs=[
-                            ("DTI", "AE+MTM")
-                        ])
+    # add_stat_annotation(ax,
+    #                     data=data,
+    #                     x="Agent",
+    #                     y="Agreement",
+    #                     test="t-test_welch",
+    #                     line_height=0.02,
+    #                     line_offset_to_box=0.04,
+    #                     box_pairs=[
+    #                         ("DTI", "AE+MTM")
+    #                     ])
 
 
 def _prepare_data_perspective_grid():
@@ -230,12 +233,10 @@ def _prepare_data_perspective_grid():
     path_ae_mtm = "results/gridsweep/sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.0-eta_dsa:0.0-"
 
     data_mti = read_single_latent(path_mti)
-    data_mti["Agent"] = "DTI"
+    data_mti["Agent"] = "Comm"
     data_ae = read_single_latent(path_ae)
-    data_ae["Agent"] = "AE"
-    data_ae_mtm = read_single_latent(path_ae_mtm)
-    data_ae_mtm["Agent"] = "AE+MTM"
-    return pd.concat([data_mti, data_ae, data_ae_mtm])
+    data_ae["Agent"] = "No comm"
+    return pd.concat([data_mti, data_ae])
 
 
 def _prepare_data_noperspective_grid():
@@ -275,6 +276,7 @@ def plot_perspective(ax, path_persp, path_no_persp, parameter_configs_p, paramet
                 capsize=0.01,
                 errwidth=1.5,
                 ax=ax,
+                # order=["Single", "Multi"]
                 )
 
     remove_ax_titles(ax)
@@ -288,14 +290,11 @@ def plot_perspective(ax, path_persp, path_no_persp, parameter_configs_p, paramet
                         hue="Agent",
                         test="t-test_welch",
                         box_pairs=[
-                            (("Yes", "AE"), ("Yes", "DTI")),
-                            (("Yes", "AE"), ("Yes", "AE+MTM")),
-
-                            (("No", "AE"), ("No", "DTI")),
-                            (("No", "AE"), ("No", "AE+MTM"))
+                            (("Yes", "No comm"), ("Yes", "Comm")),
+                            (("No", "No comm"), ("No", "Comm")),
                         ]
                         )
-    change_width_(ax, 0.22)
+    change_width_(ax, 0.32)
 
     ax.set_ylabel(r"Accuracy (\%)")
 
@@ -320,7 +319,7 @@ def plot_nagents(ax, path):
     # same range as centralised
     if path == "decentralised":
         ax.set_ylim((0.855, 0.875))
-    ax.set_xlabel("N agents")
+    ax.set_xlabel("Population size")
     ax.set_ylabel(r"Accuracy (\%)")
 
 
@@ -353,7 +352,7 @@ def _plot_perspective_nagents_robustness(
         parameter_configs_nop: "list[dict]"
 ):
     prepare_plot()
-    fig = get_fig((1, 2), size="beamer")
+    fig = get_fig((1, 2), size="beamer", height_multiplier=1)
 
     gs = fig.add_gridspec(1, 2)
     ax1 = fig.add_subplot(gs[0, 0])
@@ -368,7 +367,7 @@ def _plot_perspective_nagents_robustness(
     # set_hatch(axes)
     print("Saving plot", plotname)
     fig.savefig(
-        f"plots/prod/perspective_nagents_{plotname}.pdf",
+        f"plots/beamer/perspective_nagents_{plotname}.pdf",
         format="pdf",
         bbox_inches="tight",
     )
@@ -381,23 +380,23 @@ def _plot_swapacc_and_agreement(
         parameter_configs: list = None,
 ):
     prepare_plot()
-    fig = get_fig((1, 2), size="beamer")
-    gs = fig.add_gridspec(1, 2)
+    fig = get_fig((1, 1), size="beamer", fraction=0.618, height_multiplier=1)
+    gs = fig.add_gridspec(1, 1)
     ax1 = fig.add_subplot(gs[0, 0])
-    ax2 = fig.add_subplot(gs[0, 1])
-    axes = [ax1, ax2]
+    # ax2 = fig.add_subplot(gs[0, 1])
+    axes = [ax1]
 
     plot_swap_acc(ax1, path_swapacc, parameter_configs)
-    plot_agreement(ax2, path_agreement)
+    # plot_agreement(ax2, path_agreement)
     despine_list(axes)
     set_hatches(axes)
-    ax1.set_xlabel("Agent")
-    ax1.set_ylabel(r"Swap acc. (\%)")
-    ax2.set_xlabel("Agent")
-    ax2.set_ylabel(r"Agreement (\%)")
+    ax1.set_xlabel("Communication")
+    ax1.set_ylabel(r"Similarity (\%)")
+    # ax2.set_xlabel("Agent")
+    # ax2.set_ylabel(r"Agreement (\%)")
 
     fig.savefig(
-        f"plots/prod/swapacc_and_agreement_{plotname}.pdf",
+        f"plots/beamer/swapacc_and_agreement_{plotname}.pdf",
         format="pdf",
         bbox_inches="tight",
     )
@@ -412,9 +411,9 @@ def plot_swap_and_agreement():
         swapacc_data_centralised,
         "centralised_beamer",
         parameter_configs=[
-            {"AE": {"eta_ae": "1"}},
-            {"DTI": {"eta_msa": "1"}},
-            {"AE+MTM": {"eta_msa": "0.74", "eta_ae": "0.53"}}
+            {"No": {"eta_ae": "1"}},
+            {"Yes": {"eta_msa": "1"}},
+            # {"AE+MTM": {"eta_msa": "0.74", "eta_ae": "0.53"}}
         ]
     )
 
@@ -426,9 +425,9 @@ def plot_swap_and_agreement():
         swapacc_data_decentralised,
         "decentralised_beamer",
         parameter_configs=[
-            {"AE": {"eta_ae": "1.0", "eta_lsa": "0.0", "eta_msa": "0.0", "eta_dsa": "0.0"}},
-            {"DTI": {"eta_ae": "0.0", "eta_lsa": "0.0", "eta_msa": "1.0", "eta_dsa": "0.0"}},
-            {"AE+MTM": {"eta_ae": "0.67", "eta_lsa": "0.33", "eta_msa": "0.0", "eta_dsa": "0.0", "sigma": "0.0"}}
+            {"No": {"eta_ae": "1.0", "eta_lsa": "0.0", "eta_msa": "0.0", "eta_dsa": "0.0"}},
+            {"Yes": {"eta_ae": "0.0", "eta_lsa": "0.0", "eta_msa": "1.0", "eta_dsa": "0.0"}},
+            # {"AE+MTM": {"eta_ae": "0.67", "eta_lsa": "0.33", "eta_msa": "0.0", "eta_dsa": "0.0", "sigma": "0.0"}}
         ]
     )
 
@@ -447,14 +446,14 @@ def plot_perspective_nagents_robustness():
         path_robustnes_centralised,
         "centralised_beamer",
         parameter_configs_p=[
-            {"AE": {"eta_ae": "1", "sigma": "0.67"}},
-            {"DTI": {"eta_msa": "1", "sigma": "0.67"}},
-            {"AE+MTM": {"eta_msa": "0.74", "eta_ae": "0.53", "sigma": "0.67"}}
+            {"No comm": {"eta_ae": "1", "sigma": "0.67"}},
+            {"Comm": {"eta_msa": "1", "sigma": "0.67"}},
+            # {"AE+MTM": {"eta_msa": "0.74", "eta_ae": "0.53", "sigma": "0.67"}}
         ],
         parameter_configs_nop=[
-            {"AE": {"eta_ae": "1.0", "sigma": "0.67"}},
-            {"DTI": {"eta_msa": "1.0", "sigma": "0.67"}},
-            {"AE+MTM": {"eta_lsa": "0.14", "eta_ae": "0.81", "sigma": "1.0"}}
+            {"No comm": {"eta_ae": "1.0", "sigma": "0.67"}},
+            {"Comm": {"eta_msa": "1.0", "sigma": "0.67"}},
+            # {"AE+MTM": {"eta_lsa": "0.14", "eta_ae": "0.81", "sigma": "1.0"}}
         ]
     )
 
@@ -470,14 +469,14 @@ def plot_perspective_nagents_robustness():
         path_robustnes_decentralised,
         "decentralised_beamer",
         parameter_configs_p=[
-            {"AE": {"eta_ae": "1", "sigma": "0.67"}},
-            {"DTI": {"eta_msa": "1", "sigma": "0.67"}},
-            {"AE+MTM": {"eta_lsa": "0.33", "eta_ae": "0.33", "sigma": "1.0"}}
+            {"No comm": {"eta_ae": "1", "sigma": "0.67"}},
+            {"Comm": {"eta_msa": "1", "sigma": "0.67"}},
+            # {"AE+MTM": {"eta_lsa": "0.33", "eta_ae": "0.33", "sigma": "1.0"}}
         ],
         parameter_configs_nop=[
-            {"AE": {"eta_ae": "1.0", "sigma": "0.67"}},
-            {"DTI": {"eta_msa": "1.0", "sigma": "0.67"}},
-            {"AE+MTM": {"eta_lsa": "0.33", "eta_ae": "0.33", "sigma": "1.0"}}
+            {"No comm": {"eta_ae": "1.0", "sigma": "0.67"}},
+            {"Comm": {"eta_msa": "1.0", "sigma": "0.67"}},
+            # {"AE+MTM": {"eta_lsa": "0.33", "eta_ae": "0.33", "sigma": "1.0"}}
         ],
     )
 
