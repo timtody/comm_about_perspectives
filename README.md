@@ -9,7 +9,7 @@ We link emergent multi-agent communication with representation learning. Using d
 
 **Results:** We find that when aligning representations, performance on downstream tasks is significantly better. This is the case **only** when agents receive different viewpoints of the underlying state. We also find that population size has a significant effect on downstream task performance, but only when perspectives are used.
 
-**Significance:** We believe that the link between multi-agent learning and representation learning is a promising one and rsearchers have so far only scratched the surface.
+**Significance:** We believe that the link between multi-agent learning and representation learning is a promising one and researchers have so far only scratched the surface of what we believe is a rich and fruitful inteaction that comes almost for free when considering settings of language-based (reinforcement) learning.
 
 
 For more information, please have a look at our paper!
