@@ -5,3 +5,5 @@ data/
 plots/plots.ipynb
 plots/
 *.pdf
+.idea/
+.DS_store
