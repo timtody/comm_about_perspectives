@@ -5,7 +5,11 @@ This is the code repository for our paper "Learning To Improve Representations b
 ## At a glance
 We link emergent multi-agent communication with representation learning. Using downstream task performance as a metric, we find that when agents use their representations not only to _represent_ data but also use them to communicate, the learned representations are better then if they were not encouraged to use them in communication.
 
-**Methods:** We use multiple convolutional autoencoders and use a range of loss functions that encourage the alignment of latent representations during training. <img src="prod/arch.png" alt="drawing" width="500"/>
+**Methods:** We use multiple convolutional autoencoders and assume agents share a context, which means that they observe slightly different viewpoints of the same underlying state. We use a range of loss functions that encourage the alignment of latent representations (of the same classes) during training. 
+
+**Results:** We find that when aligning representations, performance on downstream tasks is significantly better. This is the case **only** when agents receive different viewpoints of the underlying state. We also find that population size has a significant effect on downstream task performance, but only when perspectives are used.
+
+**Significance:** We believe that the link between multi-agent learning and representation learning is a promising one and rsearchers have so far only scratched the surface.
 
 ## Results
 <img src="prod/swap.png" alt="drawing" width="500"/>
