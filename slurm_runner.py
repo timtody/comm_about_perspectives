@@ -34,7 +34,7 @@ def run_single_from_sweep_slurm(cfg, runner_args, path, rank, jobname):
         f"module purge\n"
         f"module load python/3.8.2\n"
         f"set -x\n"
-        f"srun python run_single_slurm --rank {rank} --path {path} {unpack_args(**vars(cfg))}\n"
+        f"srun python run_single_slurm.py --rank {rank} --path {path} {unpack_args(**vars(cfg))}\n"
     )
     with open("tmp", "w") as f:
         f.writelines(sbatch_file)
