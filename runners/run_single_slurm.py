@@ -1,7 +1,7 @@
 import os
 from functions import merge_cfg_with_cli
 from sweep import Experiment, Config
-from chunked_writer import MultiProcessingWriter, TidyReader
+from reader.chunked_writer import MultiProcessingWriter, TidyReader
 from argparse import ArgumentParser
 
 cfg: Config = Config()

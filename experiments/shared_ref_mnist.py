@@ -11,16 +11,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from autoencoder import AutoEncoder
-from chunked_writer import TidyReader
+from reader.chunked_writer import TidyReader
 from mnist import MNISTDataset
 from clutter import ClutterDataset
+from cifar import CifarDataset
 from torch.tensor import Tensor
 from torch.utils.tensorboard import SummaryWriter
 
 from experiments.experiment import BaseExperiment
 
 eps = 0.0001
-
 
 
 class Config(NamedTuple):
@@ -74,12 +74,13 @@ class Experiment(BaseExperiment):
         self.save_params(step, agents + [self.base_2])
         self.writer._write()
 
-    def compute_cross_acc(
-        self, agents: "list[AutoEncoder]", mlps: "list[MLP]", step: int
-    ):
+    def compute_cross_acc(self, agents: "list[AutoEncoder]", mlps: "list[MLP]", step: int):
         # TODO: DANGEROUS! will NOT scale with more agents. FIX!!!
-        ma_aes, ma_mlps = agents[:3], mlps[:3]
-        sa_aes, sa_mlps = agents[3:], mlps[3:]
+        # DONE: changed 3 to nagents. To check if correct!
+        nagents = self.cfg.nagents
+        ma_aes, ma_mlps = agents[:nagents], mlps[:nagents]
+        sa_aes, sa_mlps = agents[nagents:], mlps[nagents:]
+
         X, y = map(
             lambda x: x.to(self.dev),
             self.dataset.sample_with_label(int(self.cfg.bsize)),
@@ -95,21 +96,27 @@ class Experiment(BaseExperiment):
             self.tb.add_scalar(f"cross_agent_acc_{tag}_step{step}", acc)
 
     def run(self, cfg: NamedTuple):
+
         if self.cfg.dataset == "MNIST":
             self.dataset = MNISTDataset()
         elif self.cfg.dataset == "CLUTTER":
             self.dataset = ClutterDataset()
+        elif self.cfg.dataset == "CIFAR10":
+            self.dataset = CifarDataset()
+        elif self.cfg.dataset == "CIFAR100":
+            self.dataset = CifarDataset(dataset="CIFAR100")
         else:
             raise Exception("Wrong dataset name specified")
 
         tb_path = f"{self.path}/tb/{self.rank}"
         self.tb = SummaryWriter(tb_path)
+        self.train_writer = SummaryWriter(tb_path + "_train")
+        self.eval_writer = SummaryWriter(tb_path + "_eval")
 
         base = self.generate_autoencoder("baseline")
         self.base_2 = self.generate_autoencoder("baseline_2")
         agents = [
-            self.generate_autoencoder(f"{i}")
-            for i in string.ascii_uppercase[: cfg.nagents]
+            self.generate_autoencoder(f"{i}") for i in string.ascii_uppercase[: cfg.nagents]
         ]
         agents_and_base = agents + [base]
 
@@ -118,9 +125,7 @@ class Experiment(BaseExperiment):
             for agent_index_pair in agent_index_pairs:
                 # maybe shuffle order to break symmetry
                 shuffle = random.choice([0, 1])
-                agent_indices = (
-                    reversed(agent_index_pair) if shuffle else agent_index_pair
-                )
+                agent_indices = reversed(agent_index_pair) if shuffle else agent_index_pair
                 agent_a, agent_b = [agents[i] for i in (agent_indices)]
 
                 # execute marl-ae step
@@ -140,7 +145,10 @@ class Experiment(BaseExperiment):
         for agent in agents:
             torch.save(agent.state_dict(), os.path.join(path, f"{agent.name}.pt"))
 
-    def generate_autoencoder(self, name: str,):
+    def generate_autoencoder(
+        self,
+        name: str,
+    ):
         return AutoEncoder(
             self.cfg.latent_dim,
             self.cfg.bnorm,
@@ -190,7 +198,6 @@ class Experiment(BaseExperiment):
         msa_loss_b = F.mse_loss(rec_ba, batch_b)
 
         # decoding space adaptation
-        # NOTE: we might or might not want to detach rec_aa/rec_bb, discuss with Clem
         dsa_loss_a = F.mse_loss(rec_ab, rec_aa)
         dsa_loss_b = F.mse_loss(rec_ba, rec_bb)
 
@@ -236,12 +243,8 @@ class Experiment(BaseExperiment):
             self.tb.add_scalar(f"LSAloss{ab_name}", lsa_loss_a, step)
             self.tb.add_scalar(f"LSAloss{ba_name}", lsa_loss_b, step)
 
-            self.tb.add_scalar(
-                f"LSA-mbvar{ab_name}", lsa_loss_a / (mbvar_a + eps), step
-            )
-            self.tb.add_scalar(
-                f"LSA-mbvar{ba_name}", lsa_loss_b / (mbvar_b + eps), step
-            )
+            self.tb.add_scalar(f"LSA-mbvar{ab_name}", lsa_loss_a / (mbvar_a + eps), step)
+            self.tb.add_scalar(f"LSA-mbvar{ba_name}", lsa_loss_b / (mbvar_b + eps), step)
 
             self.writer.add_multiple(
                 [
@@ -304,8 +307,9 @@ class Experiment(BaseExperiment):
             self.dataset.sample_with_label(self.cfg.bsize_pred_latent, eval=True),
         )
         for agent in agents:
-            mlp: MLP = MLP(self.cfg.latent_dim).to(self.dev)
-            # mlp_rec: CNN = CNN().to(self.dev)
+            mlp: MLP = MLP(
+                self.cfg.latent_dim, 100 if self.cfg.dataset == "CIFAR100" else 10
+            ).to(self.dev)
 
             for i in range(self.cfg.nsteps_pred_latent):
                 ims, labels = map(
@@ -323,8 +327,13 @@ class Experiment(BaseExperiment):
                 # acc_rec = mlp_rec.compute_acc(reconstruction, labels)
 
                 if i % 50 == 0:
-                    self.tb.add_scalar(
+                    self.train_writer.add_scalar(
                         f"acc_from_latent_{agent.name}_epoch_{step}", acc_latent, i
+                    )
+                    self.eval_writer.add_scalar(
+                        f"acc_from_latent_{agent.name}_epoch_{step}",
+                        test_acc_latent,
+                        i,
                     )
                     # self.tb.add_scalar(
                     #    f"acc_from_rec_{agent.name}_epoch_{step}", acc_rec, i
@@ -350,9 +359,9 @@ class Experiment(BaseExperiment):
             tag="loss", columns=["Step", "Rank", "Loss", "Type", "Agent_A", "Agent_B"]
         )
         df.loc[df["Agent_A"] == "baseline", "Agent_B"] = "baseline"
-        groups = df.groupby(
-            ["Rank", "Type", "Agent_A", "Agent_B"], as_index=False
-        ).apply(lambda x: x.sort_values(by="Step")[::50])
+        groups = df.groupby(["Rank", "Type", "Agent_A", "Agent_B"], as_index=False).apply(
+            lambda x: x.sort_values(by="Step")[::50]
+        )
         return groups
 
     @staticmethod
@@ -364,7 +373,6 @@ class Experiment(BaseExperiment):
             col="Type",
             hue="Agent_A",
             kind="line",
-            # ci=None,
             col_wrap=3,
             facet_kws=dict(sharey=False),
         )
@@ -375,9 +383,9 @@ class Experiment(BaseExperiment):
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size: int):
+    def __init__(self, input_size: int, nclasses: int):
         super().__init__()
-        self.l = nn.Linear(input_size, 10)
+        self.l = nn.Linear(input_size, nclasses)
         self.opt = optim.Adam(self.parameters())
 
     def forward(self, x):
@@ -395,6 +403,8 @@ class MLP(nn.Module):
         loss.backward()
         self.opt.step()
         return loss.item()
+
+
 class CNN(nn.Module):
     def __init__(self):
         super().__init__()

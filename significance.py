@@ -1,19 +1,11 @@
 import itertools
-from numpy import mat
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-from pathlib import Path, PosixPath
-from typing import List, Tuple
-from pandas import DataFrame
-from chunked_writer import TidyReader
-import matplotlib
-import os
-from matplotlib.gridspec import GridSpec
+from pathlib import Path
+from reader.chunked_writer import TidyReader
 from utils import stem_to_params, load_df_and_params
 from plotting_helpers import set_size, set_tex_fonts, set_palette
-
-from scipy import stats
 
 EPOCH = 19999.0
 hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"]
@@ -306,9 +298,6 @@ if __name__ == "__main__":
     ax1.set_ylabel(r"Accuracy (\%)")
     ax2.set_ylabel(r"Accuracy (\%)")
     ax2.set_xlabel("N agents")
-
-    import matplotlib.patches as mpatches
-
 
     handles, labels = ax1.get_legend_handles_labels()
     print(handles, labels)

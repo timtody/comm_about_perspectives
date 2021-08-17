@@ -122,7 +122,7 @@ class InvalidConfigurationException(BaseException):
 
 if __name__ == "__main__":
     multiprocessing.set_start_method("fork")
-    cfg: Config = Config()
+    cfg = Config()
     parser = ArgumentParser()
     merge_cfg_with_cli(cfg, parser)
     runner_args = RunnerCfg()
@@ -169,10 +169,16 @@ if __name__ == "__main__":
             ("eta_msa", 0.0),
             ("eta_dsa", 0.0),
         ],
+        [
+            ("eta_ae", 1.0),
+            ("eta_lsa", 0.0),
+            ("eta_msa", 0.1),
+            ("eta_dsa", 0.0),
+        ],
     ]
 
     noise_levels = [0.67]
-    n_agents = [3, 4, 5, 8]
+    n_agents = [3]
     fixed_sweep = []
     for params in param_list:
         for nl in noise_levels:
@@ -198,7 +204,7 @@ if __name__ == "__main__":
                 print("[SWEEPER]: Starting SLURM job:", jobname)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
             # this is required by the IDRIS administration to keep the throughput of jobs lower
-            time.sleep(5)
+            time.sleep(2)
         else:
             raise InvalidConfigurationException("[SWEEPER]: Invalid mp method name.")
 

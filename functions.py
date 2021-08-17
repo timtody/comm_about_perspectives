@@ -10,7 +10,7 @@ from multiprocessing.context import Process
 from typing import Callable, Dict, List, NamedTuple, get_type_hints
 
 import c_types
-from chunked_writer import MultiProcessingWriter, TidyReader
+from reader.chunked_writer import MultiProcessingWriter, TidyReader
 from experiments.experiment import BaseExperiment
 
 
@@ -65,8 +65,8 @@ def start_procs(
     data_path = os.path.join(path, "data")
     os.makedirs(data_path)
     for rank in range(cfg.nprocs):
-        writer = c_types.MultiProcessingWriter(data_path, rank=rank)
-        reader = c_types.TidyReader(data_path)
+        writer = MultiProcessingWriter(data_path, rank=rank)
+        reader = TidyReader(data_path)
         proc = mp.Process(
             target=fn,
             args=(experiment, copy.deepcopy(cfg), rank, writer, reader, path, barrier),
@@ -87,8 +87,8 @@ def start_procs_without_join(
     data_path = os.path.join(path, "data")
     os.makedirs(data_path)
     for rank in range(cfg.nprocs):
-        writer = c_types.MultiProcessingWriter(data_path, rank=rank)
-        reader = c_types.TidyReader(data_path)
+        writer = MultiProcessingWriter(data_path, rank=rank)
+        reader = TidyReader(data_path)
         proc = mp.Process(
             target=start_exp,
             args=(experiment, copy.deepcopy(cfg), rank, writer, reader, path, barrier),
@@ -103,8 +103,8 @@ def start_proc(
 ) -> None:
     data_path = os.path.join(path, "data")
     os.makedirs(data_path)
-    writer = c_types.MultiProcessingWriter(data_path, rank=rank)
-    reader = c_types.TidyReader(data_path)
+    writer = MultiProcessingWriter(data_path, rank=rank)
+    reader = TidyReader(data_path)
     exp = experiment(cfg, rank, writer, reader, path, barrier)
     exp.start()
 

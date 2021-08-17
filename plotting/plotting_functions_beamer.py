@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 from statannot import add_stat_annotation
 
-from chunked_writer import TidyReader
+from reader.chunked_writer import TidyReader
 from plotting_helpers import set_size, set_tex_fonts, set_palette
 from utils import load_data, series_to_mean, plot_over
 

@@ -14,9 +14,7 @@ class BigEncoder(nn.Module):
         self.conv2 = nn.Conv2d(32, 32, 4, 2, 1)
         self.conv3 = nn.Conv2d(32, 1, 4, 1, 1)
         self.l1 = nn.Linear(self.pre_latent_dim, latent_dim)
-        self.bnorm_l = (
-            nn.BatchNorm1d(latent_dim, affine=affine) if bnorm else nn.Identity()
-        )
+        self.bnorm_l = nn.BatchNorm1d(latent_dim, affine=affine) if bnorm else nn.Identity()
 
     def forward(self, x):
         x = F.elu(self.conv1(x))
@@ -46,7 +44,7 @@ class BigDecoder(nn.Module):
         return x
 
 
-class AutoEncoder(nn.Module):
+class BigAutoEncoder(nn.Module):
     def __init__(
         self,
         latent_dim: int,
@@ -58,9 +56,7 @@ class AutoEncoder(nn.Module):
         pre_latent_dim=49,
     ):
         super().__init__()
-        self._encoder = BigEncoder(
-            latent_dim, bnorm, affine, pre_latent_dim=pre_latent_dim
-        )
+        self._encoder = BigEncoder(latent_dim, bnorm, affine, pre_latent_dim=pre_latent_dim)
         self._decoder = BigDecoder(latent_dim, pre_latent_dim=pre_latent_dim)
         self.opt = optim.Adam(self.parameters(), lr=lr)
         self.name = name
@@ -84,9 +80,7 @@ class Encoder(nn.Module):
         self.conv1 = nn.Conv2d(1, 32, 4, 2, 1)
         self.conv2 = nn.Conv2d(32, 1, 4, 2, 1)
         self.l1 = nn.Linear(self.pre_latent_dim, latent_dim)
-        self.bnorm_l = (
-            nn.BatchNorm1d(latent_dim, affine=affine) if bnorm else nn.Identity()
-        )
+        self.bnorm_l = nn.BatchNorm1d(latent_dim, affine=affine) if bnorm else nn.Identity()
 
     def forward(self, x):
         x = F.elu(self.conv1(x))
@@ -125,9 +119,7 @@ class AutoEncoder(nn.Module):
         pre_latent_dim=49,
     ):
         super().__init__()
-        self._encoder = Encoder(
-            latent_dim, bnorm, affine, pre_latent_dim=pre_latent_dim
-        )
+        self._encoder = Encoder(latent_dim, bnorm, affine, pre_latent_dim=pre_latent_dim)
         self._decoder = Decoder(latent_dim, pre_latent_dim=pre_latent_dim)
         self.opt = optim.Adam(self.parameters(), lr=lr)
         self.name = name

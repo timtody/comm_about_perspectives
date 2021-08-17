@@ -3,13 +3,14 @@ import multiprocessing as mp
 import os
 from abc import ABC, abstractmethod, abstractstaticmethod
 from multiprocessing import Barrier
-from typing import Any, Dict, Literal, NamedTuple, final
+from typing import Any, Dict, Literal, NamedTuple
 
 import c_types
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from chunked_writer import MultiProcessingWriter, TidyReader
+from reader.chunked_writer import MultiProcessingWriter, TidyReader
+from pandas import DataFrame
 
 
 def set_seeds(rank):
@@ -119,7 +120,7 @@ class BaseExperiment(ABC):
         return shared_data_types
 
     @classmethod
-    def experiment_will_unmount(cls, data: c_types.DataFrame, cfg: Dict) -> None:
+    def experiment_will_unmount(cls, data: DataFrame, cfg: Dict) -> None:
         with open("config.json", "w") as f:
             json.dump(cfg, f)
         dataframe = cls.data_transform(data)

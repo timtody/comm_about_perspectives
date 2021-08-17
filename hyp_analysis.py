@@ -1,6 +1,4 @@
-from io import DEFAULT_BUFFER_SIZE
 import itertools
-from operator import add
 import os
 import string
 from pathlib import Path, PosixPath
@@ -19,7 +17,7 @@ from sklearn.manifold import TSNE
 from torch.types import Number
 
 from autoencoder import AutoEncoder
-from chunked_writer import TidyReader
+from reader.chunked_writer import TidyReader
 from mnist import MNISTDataset
 
 from plotting_helpers import set_size, set_tex_fonts, set_palette

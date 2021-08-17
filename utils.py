@@ -1,6 +1,6 @@
 import os
 from pathlib import PosixPath, Path
-from chunked_writer import TidyReader
+from reader.chunked_writer import TidyReader
 from typing import List
 import pandas as pd
 

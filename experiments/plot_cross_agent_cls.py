@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from autoencoder import AutoEncoder
-from chunked_writer import TidyReader
+from reader.chunked_writer import TidyReader
 from mnist import MNISTDataset
 from pandas.core.frame import DataFrame
 from torch.utils.tensorboard import SummaryWriter

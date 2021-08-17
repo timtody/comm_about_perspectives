@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.io
 import torch
-
+from typing import Tuple
 
 class ClutterDataset:
     def __init__(self, split=0.9) -> None:
@@ -24,7 +24,7 @@ class ClutterDataset:
         else:
             return np.random.randint(len(self.train), size=bsize) % len(self.train)
 
-    def sample_with_label(self, bsize: int) -> torch.Tensor:
+    def sample_with_label(self, bsize: int) -> Tuple[torch.Tensor, torch.Tensor]:
         sampling_indices = self._get_indices(bsize)
         images = self.train.images[sampling_indices]
         labels = self.train.labels[sampling_indices]
@@ -34,7 +34,6 @@ class ClutterDataset:
         subset_len = len(self.train.dict[digit])
         indices = np.random.randint(subset_len, size=bsize) % subset_len
         return self.transform(self.train.dict[digit][indices])
-        
 
     def sample_all_digits_once(self) -> torch.Tensor:
         # TODO: Implement
@@ -61,11 +60,11 @@ class Subset:
         self.dict = self._generate_digit_dict(images, labels)
 
     def _generate_digit_dict(self, images, labels):
-        d = {}
-        for digit in range(10):
-            # squeeze here
-            d[digit] = images[(labels == digit)]
-        return d
+        return {digit: images[(labels == digit)] for digit in range(10)}
+        # for digit in range(10):
+        #     # squeeze here
+        #     d[digit] = images[(labels == digit)]
+        # return d
 
     def __len__(self):
         return len(self.labels)

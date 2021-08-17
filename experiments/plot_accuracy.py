@@ -1,9 +1,8 @@
 from typing import Any
 
 import matplotlib.pyplot as plt
-from pandas.io.formats import style
 import seaborn as sns
-from chunked_writer import TidyReader
+from reader.chunked_writer import TidyReader
 
 from experiments.experiment import BaseExperiment
 
