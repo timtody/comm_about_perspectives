@@ -37,7 +37,7 @@ class Config(NamedTuple):
     samedigit: bool = False
 
     # choose the dataset
-    dataset: str = "MNIST"  # MNIST or CLUTTER
+    dataset: str = "MNIST"  # MNIST, CLUTTER, CIFAR10, CIFAR100
 
     # hypsearch
     sweeper_mode: str = "grid"  # 'grid' or 'sample'
@@ -76,6 +76,7 @@ class RunnerCfg(NamedTuple):
     time: str = "60:00:00"
     cpus_per_task: int = 2
     nrpocs: int = 3
+    qos: str = "qos_gpu-t3"
 
 
 def generate_exp_path(exp, args, tracking_vars):
