@@ -10,7 +10,7 @@ from reader.chunked_writer import TidyReader
 from plotting.plotting_helpers import set_size, set_tex_fonts, set_palette
 from utils import load_data, series_to_mean, plot_over
 
-EPOCH = 39999.0
+EPOCH = 29999
 HPARAMS = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"]
 
 hatches = itertools.cycle(["/", r"\\", "X"])
@@ -36,16 +36,16 @@ def change_width_(ax, new_value, nclasses=2):
         patch.set_hatch(hatch)
 
 
-def clean_latent_data(data, epoch=None):
-    data = data[
+def clean_latent_data(data, epoch=29999):
+    print("data before clean", data)
+    return data[
         (data["Epoch"] == EPOCH if epoch is None else epoch)
-        & (data["Metric"] == "Accuracy")
+        & (data["Metric"] == "Test accuracy")
         & (data["Type"] == "Latent")
         & (data["Agent"] != "baseline_1")
         & (data["Agent"] != "baseline_2")
         & (data["Agent"] != "baseline")
     ]
-    return data
 
 
 def load_latent_data(path, epoch=None):
@@ -54,7 +54,8 @@ def load_latent_data(path, epoch=None):
         "pred_from_latent",
         ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
     )
-    data = clean_latent_data(data, epoch)
+    data = clean_latent_data(data, 29999)
+    print("cleaned data", data)
     return data
 
 
@@ -158,6 +159,8 @@ def _prepare_data_agreement(path: str):
 
 def _prepare_data_perspective(path: str, parameter_configs, cache=True):
     data = load_latent_data(path)
+    print(data)
+
     data = series_to_mean(data, add_params=HPARAMS)
     data = gather_runs_by_param_configs(data, parameter_configs)
     data.to_csv("plots/prod/perpsective_decentralised.csv")
@@ -284,7 +287,9 @@ def plot_perspective(
         print("Getting data NOT from gridsweep")
         data_perp = _prepare_data_perspective(path_persp, parameter_configs_p)
         data_no_perp = _prepare_data_perspective(path_no_persp, parameter_configs_nop)
-        ax.set_ylim((0.5, 1))
+        # ax.set_ylim((0.5, 1))
+
+    print(data_perp)
 
     data_no_perp["Perspective"] = "No"
 
@@ -491,20 +496,19 @@ def plot_swap_and_agreement():
 
 
 def plot_perspective_nagents_robustness():
-    # path_perspective_centralised = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45"
-    # path_no_perspective_centralised = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-21/13-39-24/"
-    #
+    path_perspective_centralised = (
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-17/16-53-13"
+    )
+    path_no_perspective_centralised = (
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-17/16-53-13"
+    )
+
     path_nagents_centralised = (
         "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-23/22-13-46"
     )
     path_robustnes_centralised = (
         "results/jeanzay/results/sweeps/robustness/2021-05-27/11-04-11"
     )
-
-    # ----
-
-    path_perspective_centralised = "results/shared_ref_mnist/2021-08-16/16-42-49"
-    path_no_perspective_centralised = "results/shared_ref_mnist/2021-08-16/16-42-49"
 
     _plot_perspective_nagents_robustness(
         path_perspective_centralised,
@@ -513,9 +517,9 @@ def plot_perspective_nagents_robustness():
         path_robustnes_centralised,
         "centralised_beamer",
         parameter_configs_p=[
-            {"AE": {"eta_ae": "1", "sigma": "0.67"}},
+            {"AE": {"eta_ae": "1.0", "sigma": "0.67"}},
             {"DTI": {"eta_msa": "1", "sigma": "0.67"}},
-            {"AE+MTM": {"eta_msa": "0.74", "eta_ae": "0.53", "sigma": "0.67"}},
+            {"AE+MTM": {"eta_msa": "0.1", "eta_ae": "1.0", "sigma": "0.67"}},
         ],
         parameter_configs_nop=[
             {"AE": {"eta_ae": "1.0", "sigma": "0.67"}},

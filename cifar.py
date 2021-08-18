@@ -31,7 +31,7 @@ class Cifar10Wrapper(CifarMixin, CIFAR10):
 
 
 class CifarDataset:
-    def __init__(self, dataset="CIFAR10") -> None:
+    def __init__(self, dataset="CIFAR10", colour=False) -> None:
         # CIFAR start here
         if dataset == "CIFAR10":
             self.train = Cifar10Wrapper("data", train=True, download=True)
@@ -41,6 +41,7 @@ class CifarDataset:
             self.eval = Cifar100Wrapper("data", train=False, download=True)
         # cifar data seems to be in the range 0 - 255
         self.transform = lambda x: torch.tensor(x / 255.0).float()
+        self.colour = colour
 
     def _get_indices(self, bsize: int, eval: bool = False) -> np.ndarray:
         if eval:
@@ -56,9 +57,12 @@ class CifarDataset:
             images, labels = self.eval[sampling_indices]
         else:
             images, labels = self.train[sampling_indices]
-        # labels = self.train.labels[sampling_indices]
+
+        images = self.transform(images).permute([0, 3, 1, 2])
+        if not self.colour:
+            images = images.mean(dim=1, keepdim=True)
         return (
-            self.transform(images).permute([0, 3, 1, 2]).mean(dim=1, keepdim=True),
+            images,
             torch.tensor(labels),
         )
 

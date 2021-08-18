@@ -4,6 +4,20 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from mnist import MNISTDataset
+from abc import ABC
+
+
+class AEInterface(ABC):
+    def forward(self, x):
+        x = self._encoder(x)
+        x = self._decoder(x)
+        return x
+
+    def encode(self, x) -> torch.Tensor:
+        return self._encoder(x)
+
+    def decode(self, x) -> torch.Tensor:
+        return self._decoder(x)
 
 
 class BigEncoder(nn.Module):
@@ -136,8 +150,34 @@ class AutoEncoder(nn.Module):
         return self._decoder(x)
 
 
-if __name__ == "__main__":
-    ds = MNISTDataset()
-    ae = AutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=36)
-    data = ds.sample(10)
-    rec = ae(data)
+class CifarAutoEncoder(AEInterface, nn.Module):
+    def __init__(self, lr=0.001, name=None):
+        super().__init__()
+        self._encoder = cifar_encoder()
+        self._decoder = cifar_decoder()
+        self.opt = optim.Adam(self.parameters(), lr=lr)
+        self.name = name
+
+
+def cifar_encoder():
+    return nn.Sequential(
+        nn.Conv2d(3, 32, 5),
+        nn.ELU(),
+        nn.Conv2d(32, 64, 5),
+        nn.ELU(),
+        nn.Conv2d(64, 64, 5),
+        nn.ELU(),
+        nn.Conv2d(64, 1, 5),
+    )
+
+
+def cifar_decoder():
+    return nn.Sequential(
+        nn.ConvTranspose2d(1, 64, 5),
+        nn.ELU(),
+        nn.ConvTranspose2d(64, 64, 5),
+        nn.ELU(),
+        nn.ConvTranspose2d(64, 32, 5),
+        nn.ELU(),
+        nn.ConvTranspose2d(32, 3, 5),
+    )
