@@ -155,7 +155,7 @@ class Experiment(BaseExperiment):
             self.cfg.affine,
             self.cfg.lr,
             name,
-            pre_latent_dim=36 if self.cfg.dataset == "MNIST" else 64,
+            pre_latent_dim=49 if self.cfg.dataset == "MNIST" else 64,
         ).to(self.dev)
 
     def sync_ae_step(self, step: int, agent_a: AutoEncoder, agent_b: AutoEncoder):

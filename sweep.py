@@ -4,8 +4,6 @@ import time
 from argparse import ArgumentParser
 from typing import NamedTuple
 
-import numpy as np
-from torch.nn.functional import GRID_SAMPLE_INTERPOLATION_MODES
 
 from experiments.shared_ref_mnist import Experiment
 from functions import (
@@ -166,14 +164,8 @@ if __name__ == "__main__":
         ],
         [
             ("eta_ae", 1.0),
-            ("eta_lsa", 0.0),
+            ("eta_lsa", 0.1),
             ("eta_msa", 0.0),
-            ("eta_dsa", 0.0),
-        ],
-        [
-            ("eta_ae", 1.0),
-            ("eta_lsa", 0.0),
-            ("eta_msa", 0.1),
             ("eta_dsa", 0.0),
         ],
     ]
