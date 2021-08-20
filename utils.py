@@ -55,13 +55,11 @@ def load_df_and_params(
 
 def load_data(path, tag, keys, stop_after=None):
     paths = list(Path(path).glob("*"))
-    print(paths)
     dfs = []
     i = 0
     for path in paths:
         i += 1
         df, params = load_df_and_params(path, tag, keys)
-        print(df)
         for param, value in params.items():
             df[param] = value
         dfs.append(df)
