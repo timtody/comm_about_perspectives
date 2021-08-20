@@ -65,8 +65,6 @@ def evaluate(dataframe, path) -> None:
 def evaluate_experiment(path: str, data_x: Tensor, data_y: Tensor) -> pd.DataFrame:
     result_df_container = []
     for path in glob.glob(f"{path}/*"):
-        _, rank = path.split("_")
-
         for i in range(2):
             ae = AutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=49)
             repres = ae.encode(data_x)
@@ -76,7 +74,9 @@ def evaluate_experiment(path: str, data_x: Tensor, data_y: Tensor) -> pd.DataFra
 
         for i in range(2):
             ae = AutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=49)
-            ae.load_state_dict(torch.load(path + ("/baseline.pt" if i == 0 else "/baseline_2.pt")))
+            ae.load_state_dict(
+                torch.load(path + ("/baseline.pt" if i == 0 else "/baseline_2.pt"))
+            )
             repres = ae.encode(data_x)
             results = evaluate_representations(repres, data_y, 10, (30,), args, "AE")
             results["Agent"] = i
@@ -97,14 +97,20 @@ def evaluate_experiment(path: str, data_x: Tensor, data_y: Tensor) -> pd.DataFra
 def main(args):
     # load dataset
     ds = MNISTDataset()
-    data_x, data_y = ds.sample_with_label(10000)
+    data_x, data_y = ds.test_set.data.unsqueeze(1) / 255.0, ds.test_set.targets
     results_path = "results/full_res.csv"
     if not os.path.exists(results_path):
-        results = evaluate_experiment("/home/julius/experiment", data_x, data_y)
+        results = evaluate_experiment(
+            "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-19/23-08-07/eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-sigma:0.67-nagents:3-/params/step_49999",
+            data_x,
+            data_y,
+        )
         results.to_csv("results/full_res.csv")
     else:
         results = pd.read_csv(results_path)
-        results["name"] = results['name'].map({"Baseline": "Random features", "AE": "AE", "Ours": "DTI"})
+        results["name"] = results["name"].map(
+            {"Baseline": "Random features", "AE": "AE", "Ours": "DTI"}
+        )
         print(results)
     ns = [
         10,
@@ -115,8 +121,16 @@ def main(args):
     epsilons = [0.2, 1]
 
     sns.set_palette(sns.color_palette("Set1"))
-    ax = sns.lineplot(data=results, x="samples", y="val_loss", hue="name", legend="brief", style="name", markers=True,
-                      dashes=False)
+    ax = sns.lineplot(
+        data=results,
+        x="samples",
+        y="val_loss",
+        hue="name",
+        legend="brief",
+        style="name",
+        markers=True,
+        dashes=False,
+    )
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles=handles[1:], labels=labels[1:])
     plt.yscale("log")
@@ -159,7 +173,6 @@ def _closest_valid_ns(df, ns):
         last_match = i
         closest_ns.append(available_ns[i])
     return closest_ns
-
 
 
 if __name__ == "__main__":

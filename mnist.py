@@ -20,15 +20,11 @@ class MNISTDataset:
             download=True,
         )
         self.train_set = dataset
-        self.test_set = torchvision.datasets.MNIST(
-            "data/mnist", download=True, train=False
-        )
+        self.test_set = torchvision.datasets.MNIST("data/mnist", download=True, train=False)
 
         self.dataset = dataset
         self.transform = lambda x: x / 255.0
-        self._train, self._test = self.build_train_and_test_set(
-            dataset, test_train_split
-        )
+        self._train, self._test = self.build_train_and_test_set(dataset, test_train_split)
         self._data_dict_train = self.build_dict_and_maybe_dataset(dataset)
         # self._data_dict_test = self.build_dict_and_maybe_dataset(dataset, train=False)
 
@@ -141,6 +137,10 @@ class MNISTDataset:
 
 if __name__ == "__main__":
     ds = MNISTDataset()
+    print(ds.test_set)
+    print(ds.test_set.targets)
+    print(len(ds.test_set))
+    exit(1)
     ims, labels = ds.sample_with_label(10, eval=False)
     for im, label in zip(ims, labels):
         plt.imshow(im.reshape(28, 28))
