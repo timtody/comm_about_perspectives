@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from autoencoder import AutoEncoder
+from autoencoder import CifarAutoEncoder
 from reader.chunked_writer import TidyReader
 from mnist import MNISTDataset
 from clutter import ClutterDataset
@@ -90,7 +91,7 @@ class Experiment(BaseExperiment):
 
     def _compute_cross_acc(self, X, y, aes, mlps, tag, step, rot=1):
         for i, (ae, mlp) in enumerate(zip(aes, mlps[rot:] + mlps[:rot])):
-            latent = ae.encode(X)
+            latent = ae.encode(X).flatten(start_dim=1)
             acc = mlp.compute_acc(latent, y)
             self.writer.add((step, tag, acc), step=i, tag="cross_agent_acc")
             self.tb.add_scalar(f"cross_agent_acc_{tag}_step{step}", acc)
@@ -149,14 +150,17 @@ class Experiment(BaseExperiment):
         self,
         name: str,
     ):
-        return AutoEncoder(
-            self.cfg.latent_dim,
-            self.cfg.bnorm,
-            self.cfg.affine,
-            self.cfg.lr,
-            name,
-            pre_latent_dim=49 if self.cfg.dataset == "MNIST" else 64,
-        ).to(self.dev)
+        if self.cfg.dataset == "CIFAR100":
+            return CifarAutoEncoder(self.cfg.lr, name).to(self.dev)
+        else:
+            return AutoEncoder(
+                self.cfg.latent_dim,
+                self.cfg.bnorm,
+                self.cfg.affine,
+                self.cfg.lr,
+                name,
+                pre_latent_dim=49 if self.cfg.dataset == "MNIST" else 64,
+            ).to(self.dev)
 
     def sync_ae_step(self, step: int, agent_a: AutoEncoder, agent_b: AutoEncoder):
         digit = random.choice(range(10))
@@ -306,9 +310,16 @@ class Experiment(BaseExperiment):
             lambda x: x.to(self.dev),
             self.dataset.sample_with_label(self.cfg.bsize_pred_latent, eval=True),
         )
+
+        input_size = agents[0].encode(test_ims[0].unsqueeze(0)).flatten().size()[0]
+        print(
+            input_size,
+            100 if self.cfg.dataset == "CIFAR100" else 10,
+        )
         for agent in agents:
             mlp: MLP = MLP(
-                self.cfg.latent_dim, 100 if self.cfg.dataset == "CIFAR100" else 10
+                input_size,
+                100 if self.cfg.dataset == "CIFAR100" else 10,
             ).to(self.dev)
 
             for i in range(self.cfg.nsteps_pred_latent):
@@ -316,12 +327,15 @@ class Experiment(BaseExperiment):
                     lambda x: x.to(self.dev),
                     self.dataset.sample_with_label(self.cfg.bsize_pred_latent),
                 )
-                latent = agent.encode(ims)
+                latent = agent.encode(ims).flatten(start_dim=1)
+                print(latent.size(), labels.size())
                 # reconstruction = agent(ims)
 
                 loss_latent = mlp.train(latent, labels)
                 acc_latent = mlp.compute_acc(latent, labels)
-                test_acc_latent = mlp.compute_acc(agent.encode(test_ims), test_targets)
+                test_acc_latent = mlp.compute_acc(
+                    agent.encode(test_ims).flatten(start_dim=1), test_targets
+                )
 
                 # loss_rec = mlp_rec.train(reconstruction, labels)
                 # acc_rec = mlp_rec.compute_acc(reconstruction, labels)
