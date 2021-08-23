@@ -54,7 +54,7 @@ def load_latent_data(path, epoch=None):
         "pred_from_latent",
         ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
     )
-    data = clean_latent_data(data, 29999)
+    data = clean_latent_data(data, epoch)
     print("cleaned data", data)
     return data
 
@@ -158,7 +158,7 @@ def _prepare_data_agreement(path: str):
 
 
 def _prepare_data_perspective(path: str, parameter_configs, cache=True):
-    data = load_latent_data(path)
+    data = load_latent_data(path, 49999)
     print(data)
 
     data = series_to_mean(data, add_params=HPARAMS)
@@ -289,7 +289,7 @@ def plot_perspective(
         data_no_perp = _prepare_data_perspective(path_no_persp, parameter_configs_nop)
         # ax.set_ylim((0.5, 1))
 
-    print(data_perp)
+    print(data_perp.groupby("Agent").mean())
 
     data_no_perp["Perspective"] = "No"
 
@@ -298,6 +298,7 @@ def plot_perspective(
 
     data = pd.concat([data_perp, data_no_perp])
     data.sort_values(by="Agent", inplace=True)
+    print(data.head(100))
 
     sns.barplot(
         data=data,
@@ -312,22 +313,22 @@ def plot_perspective(
 
     remove_ax_titles(ax)
 
-    add_stat_annotation(
-        ax,
-        line_height=0.02,
-        line_offset_to_box=0.04,
-        data=data,
-        x="Perspective",
-        y="Value",
-        hue="Agent",
-        test="t-test_welch",
-        box_pairs=[
-            (("Yes", "AE"), ("Yes", "DTI")),
-            (("Yes", "AE"), ("Yes", "AE+MTM")),
-            (("No", "AE"), ("No", "DTI")),
-            (("No", "AE"), ("No", "AE+MTM")),
-        ],
-    )
+    # add_stat_annotation(
+    #     ax,
+    #     line_height=0.02,
+    #     line_offset_to_box=0.04,
+    #     data=data,
+    #     x="Perspective",
+    #     y="Value",
+    #     hue="Agent",
+    #     test="t-test_welch",
+    #     box_pairs=[
+    #         (("Yes", "AE"), ("Yes", "DTI")),
+    #         (("Yes", "AE"), ("Yes", "AE+MTM")),
+    #         (("No", "AE"), ("No", "DTI")),
+    #         (("No", "AE"), ("No", "AE+MTM")),
+    #     ],
+    # )
     change_width_(ax, 0.22)
 
     ax.set_ylabel(r"Accuracy (\%)")
@@ -497,10 +498,10 @@ def plot_swap_and_agreement():
 
 def plot_perspective_nagents_robustness():
     path_perspective_centralised = (
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-17/16-53-13"
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-22/22-59-23"
     )
     path_no_perspective_centralised = (
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-17/16-53-13"
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-22/22-59-23"
     )
 
     path_nagents_centralised = (
@@ -518,13 +519,13 @@ def plot_perspective_nagents_robustness():
         "centralised_beamer",
         parameter_configs_p=[
             {"AE": {"eta_ae": "1.0", "sigma": "0.67"}},
-            {"DTI": {"eta_msa": "1", "sigma": "0.67"}},
-            {"AE+MTM": {"eta_msa": "0.1", "eta_ae": "1.0", "sigma": "0.67"}},
+            {"DTI": {"eta_msa": "1.0", "sigma": "0.67"}},
+            {"AE+MTM": {"eta_lsa": "0.14", "eta_ae": "0.81", "sigma": "0.67"}},
         ],
         parameter_configs_nop=[
             {"AE": {"eta_ae": "1.0", "sigma": "0.67"}},
             {"DTI": {"eta_msa": "1.0", "sigma": "0.67"}},
-            {"AE+MTM": {"eta_lsa": "0.14", "eta_ae": "0.81", "sigma": "1.0"}},
+            {"AE+MTM": {"eta_lsa": "0.14", "eta_ae": "0.81", "sigma": "0.67"}},
         ],
     )
     exit(1)

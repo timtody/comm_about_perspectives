@@ -169,13 +169,13 @@ def cifar_encoder():
         nn.ELU(),
         nn.Conv2d(64, 64, 5),
         nn.ELU(),
-        nn.Conv2d(64, 4, 5),
+        nn.Conv2d(64, 3, 5),
     )
 
 
 def cifar_decoder():
     return nn.Sequential(
-        nn.ConvTranspose2d(4, 64, 5),
+        nn.ConvTranspose2d(3, 64, 5),
         nn.ELU(),
         nn.ConvTranspose2d(64, 64, 5),
         nn.ELU(),

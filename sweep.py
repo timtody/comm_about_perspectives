@@ -168,6 +168,12 @@ if __name__ == "__main__":
             ("eta_msa", 0.0),
             ("eta_dsa", 0.0),
         ],
+        [
+            ("eta_ae", 1.0),
+            ("eta_lsa", 0.0),
+            ("eta_msa", 0.0),
+            ("eta_dsa", 0.0),
+        ],
     ]
 
     noise_levels = [0.67]
