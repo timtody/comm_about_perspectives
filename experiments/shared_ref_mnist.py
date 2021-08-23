@@ -312,7 +312,6 @@ class Experiment(BaseExperiment):
         )
 
         input_size = agents[0].encode(test_ims[0].unsqueeze(0)).flatten().size()[0]
-        exit(1)
         for agent in agents:
             mlp: MLP = MLP(
                 input_size,
@@ -325,7 +324,6 @@ class Experiment(BaseExperiment):
                     self.dataset.sample_with_label(self.cfg.bsize_pred_latent),
                 )
                 latent = agent.encode(ims).flatten(start_dim=1)
-                print(latent.size(), labels.size())
                 # reconstruction = agent(ims)
 
                 loss_latent = mlp.train(latent, labels)
