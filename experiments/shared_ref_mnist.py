@@ -150,7 +150,7 @@ class Experiment(BaseExperiment):
         self,
         name: str,
     ):
-        if self.cfg.dataset == "CIFAR100":
+        if self.cfg.dataset == "CIFAR100" or self.cfg.dataset == "CIFAR10":
             return CifarAutoEncoder(self.cfg.lr, name).to(self.dev)
         else:
             return AutoEncoder(
@@ -312,7 +312,6 @@ class Experiment(BaseExperiment):
         )
 
         input_size = agents[0].encode(test_ims[0].unsqueeze(0)).flatten().size()[0]
-        print(input_size)
         exit(1)
         for agent in agents:
             mlp: MLP = MLP(

@@ -6,3 +6,4 @@ plots/plots.ipynb
 plots/
 .idea/
 .DS_store
+wandb/
