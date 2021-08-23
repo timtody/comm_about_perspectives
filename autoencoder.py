@@ -161,7 +161,7 @@ class CifarAutoEncoder(AEInterface, nn.Module):
 
 def cifar_encoder():
     return nn.Sequential(
-        nn.Conv2d(3, 32, 5),
+        nn.Conv2d(1, 32, 5),
         nn.ELU(),
         nn.Conv2d(32, 64, 5),
         nn.ELU(),
@@ -183,5 +183,5 @@ def cifar_decoder():
         nn.ELU(),
         nn.ConvTranspose2d(64, 32, 5),
         nn.ELU(),
-        nn.ConvTranspose2d(32, 3, 5),
+        nn.ConvTranspose2d(32, 1, 5),
     )

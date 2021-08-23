@@ -58,7 +58,7 @@ class CifarDataset:
         else:
             images, labels = self.train[sampling_indices]
 
-        images = self.transform(images).permute([0, 3, 1, 2])
+        images = self.transform(images).permute([0, 3, 1, 2]).mean(dim=1, keepdim=True)
         return (
             images,
             torch.tensor(labels),
@@ -68,7 +68,8 @@ class CifarDataset:
         subset_len = len(self.train.dict[digit])
 
         indices = np.random.randint(subset_len, size=bsize) % subset_len
-        return self.transform(self.train.dict[digit][indices]).permute([0, 3, 1, 2]).float()
+        return self.transform(self.train.dict[digit][indices]).permute([0, 3, 1, 2]).\
+            mean(dim=1, keepdim=True).float()
 
     def sample_all_digits_once(self) -> torch.Tensor:
         # TODO: Implement

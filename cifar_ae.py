@@ -9,8 +9,10 @@ from experiments.shared_ref_mnist import MLP
 
 
 class Config(NamedTuple):
-    lr: float = 0.0001
-    bsize: int = 1024
+    lr: float = 0.001
+    bsize: int = 2048
+    eval_steps: int = 2000
+    n_classes: int = 10
 
 
 def log_reconstructions(ae, dataset, dev):
@@ -19,40 +21,42 @@ def log_reconstructions(ae, dataset, dev):
     reconstructions = ae(ims.to(dev))
 
     for ax, im in zip(axes.flatten(), torch.cat([reconstructions.cpu(), ims], dim=0)):
-        ax.imshow(im.detach().permute(1, 2, 0))
+        ax.imshow(im.detach().squeeze())
 
     wandb.log({"reconstructions": plt})
 
 
 def predict_classes(cfg, ae, dataset, dev, step):
-    mlp = MLP(432, 100).to(dev)
+    mlp = MLP(432, cfg.n_classes).to(dev)
     test_ims, test_targets = map(
         lambda x: x.to(dev),
         dataset.sample_with_label(cfg.bsize, eval=True),
     )
-    ims, labels = map(
-        lambda x: x.to(dev),
-        dataset.sample_with_label(cfg.bsize),
-    )
-    latent = ae.encode(ims).flatten(start_dim=1)
-    loss_latent = mlp.train(latent, labels)
-    acc_latent = mlp.compute_acc(latent, labels)
-    test_acc_latent = mlp.compute_acc(
-        ae.encode(test_ims).flatten(start_dim=1), test_targets
-    )
-    wandb.log({
-                f"step_{step}_loss": loss_latent,
-                f"step_{step}_acc": acc_latent,
-                f"step_{step}_test_acc": test_acc_latent
-                })
+    for i in range(cfg.eval_steps):
+        ims, labels = map(
+            lambda x: x.to(dev),
+            dataset.sample_with_label(cfg.bsize),
+        )
+        latent = ae.encode(ims).flatten(start_dim=1)
+        loss_latent = mlp.train(latent, labels)
+        acc_latent = mlp.compute_acc(latent, labels)
+        test_acc_latent = mlp.compute_acc(
+            ae.encode(test_ims).flatten(start_dim=1), test_targets
+        )
+        wandb.log({
+                    f"mlp loss": loss_latent,
+                    f"mlp acc train": acc_latent,
+                    f"mlp acc test": test_acc_latent
+                    })
 
 
 def main():
     cfg = Config()
-    dataset = CifarDataset("CIFAR100")
+    assert cfg.n_classes == 10 or cfg.n_classes == 100, "10 or 100 classes only"
+    dataset = CifarDataset(f"CIFAR{cfg.n_classes}")
     ae = CifarAutoEncoder(lr=cfg.lr)
 
-    wandb.init(project='cifar-100-autoencoder', entity='timtody', config=cfg._asdict())
+    wandb.init(project='cifar-100-autoencoder', entity='origin-flowers', config=cfg._asdict())
     wandb.watch(ae)
 
     dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -66,10 +70,10 @@ def main():
         loss.backward()
         ae.opt.step()
         wandb.log({"Reconstruction loss": loss.item()})
-        if i % 100 == 0:
+        if i % 250 == 0:
             log_reconstructions(ae, dataset, dev)
 
-        if i % 250 == 0:
+        if i % 1000 == 0:
             predict_classes(cfg, ae, dataset, dev, i)
 
 
