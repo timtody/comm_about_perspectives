@@ -13,7 +13,7 @@ class Config(NamedTuple):
     bsize: int = 2048
     eval_steps: int = 5000
     n_classes: int = 10
-    n_latent_channels: int = 1
+    n_latent_channels: int = 10
 
 
 def log_reconstructions(ae, dataset, dev):
