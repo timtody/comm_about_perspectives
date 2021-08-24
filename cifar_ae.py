@@ -9,11 +9,11 @@ from experiments.shared_ref_mnist import MLP
 
 
 class Config(NamedTuple):
-    lr: float = 0.001
-    bsize: int = 2048
-    eval_steps: int = 5000
+    lr: float = 0.0005
+    bsize: int = 512
+    eval_steps: int = 20000
     n_classes: int = 10
-    n_latent_channels: int = 10
+    n_latent_channels: int = 1
 
 
 def log_reconstructions(ae, dataset, dev):
@@ -32,8 +32,7 @@ def predict_classes(cfg, ae, dataset, dev, step):
         lambda x: x.to(dev),
         dataset.sample_with_label(cfg.bsize, eval=True),
     )
-    input_size = ae.encode(test_ims[0].unsqueeze(0)).flatten().size()[0]
-    print(input_size)
+    input_size = ae.encode(test_ims[0].unsqueeze(0)).flatten().size(0)
     mlp = MLP(input_size, cfg.n_classes).to(dev)
 
     for i in range(cfg.eval_steps):
@@ -78,10 +77,10 @@ def main():
         loss.backward()
         ae.opt.step()
         wandb.log({"Reconstruction loss": loss.item()})
-        if i % 500 == 0:
+        if i % 1000 == 0:
             log_reconstructions(ae, dataset, dev)
 
-        if i % 5000 == 0:
+        if i % 50000 == 0:
             predict_classes(cfg, ae, dataset, dev, i)
 
 
