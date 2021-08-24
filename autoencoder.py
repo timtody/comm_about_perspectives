@@ -7,7 +7,7 @@ from mnist import MNISTDataset
 from abc import ABC
 
 
-class AEInterface(ABC):
+class _AutoEncoder(ABC):
     def forward(self, x):
         x = self._encoder(x)
         x = self._decoder(x)
@@ -121,7 +121,7 @@ class Decoder(nn.Module):
         return x
 
 
-class AutoEncoder(nn.Module):
+class AutoEncoder(_AutoEncoder, nn.Module):
     def __init__(
         self,
         latent_dim: int,
@@ -150,38 +150,38 @@ class AutoEncoder(nn.Module):
         return self._decoder(x)
 
 
-class CifarAutoEncoder(AEInterface, nn.Module):
-    def __init__(self, lr=0.001, name=None):
+class CifarAutoEncoder(_AutoEncoder, nn.Module):
+    def __init__(self, lr=0.001, name=None, n_latent_channels=3,):
         super().__init__()
-        self._encoder = cifar_encoder()
-        self._decoder = cifar_decoder()
+        self._encoder = cifar_encoder(n_latent_channels=n_latent_channels)
+        self._decoder = cifar_decoder(n_latent_channels=n_latent_channels)
         self.opt = optim.Adam(self.parameters(), lr=lr)
         self.name = name
 
 
-def cifar_encoder():
+def cifar_encoder(n_latent_channels):
     return nn.Sequential(
-        nn.Conv2d(1, 32, 5),
+        nn.Conv2d(1, 32, 4, 2, 1),
         nn.ELU(),
-        nn.Conv2d(32, 64, 5),
+        # nn.Conv2d(32, 64, 5),
+        # nn.ELU(),
+        # nn.Conv2d(64, 64, 5),
+        # nn.ELU(),
+        # nn.Conv2d(64, 64, 5),
+        # nn.ELU(),
+        nn.Conv2d(32, n_latent_channels, 4, 2, 1),
         nn.ELU(),
-        nn.Conv2d(64, 64, 5),
-        nn.ELU(),
-        nn.Conv2d(64, 64, 5),
-        nn.ELU(),
-        nn.Conv2d(64, 3, 5),
     )
 
 
-def cifar_decoder():
+def cifar_decoder(n_latent_channels):
     return nn.Sequential(
-        nn.ConvTranspose2d(3, 64, 5),
+        nn.ConvTranspose2d(n_latent_channels, 32, 4, 2, 1),
+        # # nn.ConvTranspose2d(64, 64, 5),
+        # # nn.ELU(),
+        # # nn.ConvTranspose2d(64, 64, 5),
+        # # nn.ELU(),
+        # nn.ConvTranspose2d(64, 32, 5),
         nn.ELU(),
-        nn.ConvTranspose2d(64, 64, 5),
-        nn.ELU(),
-        nn.ConvTranspose2d(64, 64, 5),
-        nn.ELU(),
-        nn.ConvTranspose2d(64, 32, 5),
-        nn.ELU(),
-        nn.ConvTranspose2d(32, 1, 5),
+        nn.ConvTranspose2d(32, 1, 4, 2, 1),
     )

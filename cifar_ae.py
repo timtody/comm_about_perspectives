@@ -11,8 +11,9 @@ from experiments.shared_ref_mnist import MLP
 class Config(NamedTuple):
     lr: float = 0.001
     bsize: int = 2048
-    eval_steps: int = 2000
+    eval_steps: int = 5000
     n_classes: int = 10
+    n_latent_channels: int = 1
 
 
 def log_reconstructions(ae, dataset, dev):
@@ -27,11 +28,14 @@ def log_reconstructions(ae, dataset, dev):
 
 
 def predict_classes(cfg, ae, dataset, dev, step):
-    mlp = MLP(432, cfg.n_classes).to(dev)
     test_ims, test_targets = map(
         lambda x: x.to(dev),
         dataset.sample_with_label(cfg.bsize, eval=True),
     )
+    input_size = ae.encode(test_ims[0].unsqueeze(0)).flatten().size()[0]
+    print(input_size)
+    mlp = MLP(input_size, cfg.n_classes).to(dev)
+
     for i in range(cfg.eval_steps):
         ims, labels = map(
             lambda x: x.to(dev),
@@ -53,16 +57,15 @@ def predict_classes(cfg, ae, dataset, dev, step):
 def main():
     cfg = Config()
     assert cfg.n_classes == 10 or cfg.n_classes == 100, "10 or 100 classes only"
-    dataset = CifarDataset(f"CIFAR{cfg.n_classes}")
-    ae = CifarAutoEncoder(lr=cfg.lr)
-
     wandb.init(project='cifar-100-autoencoder', entity='origin-flowers', config=cfg._asdict())
+    ae = CifarAutoEncoder(lr=cfg.lr, n_latent_channels=cfg.n_latent_channels)
     wandb.watch(ae)
+    dataset = CifarDataset(f"CIFAR{cfg.n_classes}")
 
     dev = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     ae.to(dev)
 
-    for i in range(10000):
+    for i in range(50000):
         batch, _ = dataset.sample_with_label(2048)
         ae.opt.zero_grad()
         reconstruction = ae(batch.to(dev))
@@ -70,10 +73,10 @@ def main():
         loss.backward()
         ae.opt.step()
         wandb.log({"Reconstruction loss": loss.item()})
-        if i % 250 == 0:
+        if i % 500 == 0:
             log_reconstructions(ae, dataset, dev)
 
-        if i % 1000 == 0:
+        if i % 5000 == 0:
             predict_classes(cfg, ae, dataset, dev, i)
 
 
