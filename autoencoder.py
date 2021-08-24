@@ -143,15 +143,9 @@ class AutoEncoder(_AutoEncoder, nn.Module):
         x = self._decoder(x)
         return x
 
-    def encode(self, x) -> torch.Tensor:
-        return self._encoder(x)
-
-    def decode(self, x) -> torch.Tensor:
-        return self._decoder(x)
-
 
 class CifarAutoEncoder(_AutoEncoder, nn.Module):
-    def __init__(self, lr=0.001, name=None, n_latent_channels=3,):
+    def __init__(self, lr=0.001, name=None, n_latent_channels=3):
         super().__init__()
         self._encoder = cifar_encoder(n_latent_channels=n_latent_channels)
         self._decoder = cifar_decoder(n_latent_channels=n_latent_channels)

@@ -47,17 +47,21 @@ def predict_classes(cfg, ae, dataset, dev, step):
         test_acc_latent = mlp.compute_acc(
             ae.encode(test_ims).flatten(start_dim=1), test_targets
         )
-        wandb.log({
-                    f"mlp loss": loss_latent,
-                    f"mlp acc train": acc_latent,
-                    f"mlp acc test": test_acc_latent
-                    })
+        wandb.log(
+            {
+                f"mlp loss": loss_latent,
+                f"mlp acc train": acc_latent,
+                f"mlp acc test": test_acc_latent,
+            }
+        )
 
 
 def main():
     cfg = Config()
     assert cfg.n_classes == 10 or cfg.n_classes == 100, "10 or 100 classes only"
-    wandb.init(project='cifar-100-autoencoder', entity='origin-flowers', config=cfg._asdict())
+    wandb.init(
+        project="cifar-100-autoencoder", entity="origin-flowers", config=cfg._asdict()
+    )
     ae = CifarAutoEncoder(lr=cfg.lr, n_latent_channels=cfg.n_latent_channels)
     wandb.watch(ae)
     dataset = CifarDataset(f"CIFAR{cfg.n_classes}")
@@ -68,8 +72,9 @@ def main():
     for i in range(50000):
         batch, _ = dataset.sample_with_label(2048)
         ae.opt.zero_grad()
-        reconstruction = ae(batch.to(dev))
-        loss = F.mse_loss(reconstruction, batch.to(dev))
+        latent = ae.encode(batch.to(dev))
+        reconstruction = ae.decode(latent)
+        loss = F.mse_loss(reconstruction, batch.to(dev)) + latent.mean()
         loss.backward()
         ae.opt.step()
         wandb.log({"Reconstruction loss": loss.item()})
