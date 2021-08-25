@@ -17,4 +17,4 @@ module load python/3.8.2
 
 set -x                                          # activating echo of launched commands
 
-srun python eval_with_reprieve_cifar10.py
+srun nvcc --version
