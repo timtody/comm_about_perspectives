@@ -17,4 +17,4 @@ module load python/3.8.2
 
 set -x                                          # activating echo of launched commands
 
-srun sleep 20s
+srun sleep 2m
