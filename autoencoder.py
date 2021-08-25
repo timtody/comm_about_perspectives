@@ -158,25 +158,17 @@ def cifar_encoder(n_latent_channels):
         nn.Conv2d(1, 16, 4),
         nn.ELU(),
         nn.Conv2d(16, 16, 4),
-        # nn.ELU(),
-        # nn.Conv2d(64, 64, 5),ws
-        # nn.ELU(),
-        # nn.Conv2d(64, 64, 5),
-        # nn.ELU(),
-        # nn.Flatten(),
-        # nn.Linear(),
+        nn.ELU(),
+        nn.Flatten(),
+        nn.Linear(10816, 2500),
     )
 
 
 def cifar_decoder(n_latent_channels):
     return nn.Sequential(
-        # nn.Linear(),
-        # nn.Unflatten(),
-        # nn.ConvTranspose2d(n_latent_channels, 32, 4),
-        # # nn.ConvTranspose2d(64, 64, 5),
-        # # nn.ELU(),
-        # # nn.ConvTranspose2d(64, 64, 5),
-        # # nn.ELU(),
+        nn.Linear(2500, 10816),
+        nn.Unflatten(1, (16, 26, 26)),
+        nn.ELU(),
         nn.ConvTranspose2d(16, 16, 4),
         nn.ELU(),
         nn.ConvTranspose2d(16, 1, 4),
