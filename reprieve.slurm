@@ -17,4 +17,4 @@ module load python/3.8.2
 
 set -x                                          # activating echo of launched commands
 
-srun sleep 2m
+srun python eval_with_reprieve_cifarg10.py
