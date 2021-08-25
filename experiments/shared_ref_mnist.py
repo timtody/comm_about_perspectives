@@ -400,9 +400,9 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.l(x)
 
-    def compute_acc(self, ims, labels):
-        pred = self.l(ims).argmax(dim=1)
-        acc = (pred == labels).float().mean()
+    def compute_acc(self, ims, labels, topk=1):
+        _, pred = self.l(ims).topk(dim=1, k=topk)
+        acc = (labels.unsqueeze(1) == pred).any(dim=1).float().mean()
         return acc.item()
 
     def train(self, inputs, targets):
