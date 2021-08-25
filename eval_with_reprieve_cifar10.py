@@ -49,7 +49,7 @@ def evaluate_representations(
         use_vmap=args.use_vmap,
         cache_data=args.cache_data,
         verbose=True,
-        batch_size=4
+        batch_size=args.bsize,
     )
     results = raw_loss_data_estimator.compute_curve(n_points=args.points)
     results["name"] = name
@@ -146,10 +146,8 @@ def main(args):
 
     if not os.path.exists(results_path):
         results = evaluate_experiment(
-            "results/reprieve/cifar/19-16-00/"
-            "eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-sigma:0.67-nagents:3-/params/step_49999",
-            "results/reprieve/cifar/19-16-00/"
-            "eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-sigma:0.67-nagents:3-/params/step_49999",
+            args.dti_path,
+            args.mtm_path,
             data_x,
             data_y,
         )
@@ -179,6 +177,9 @@ if __name__ == "__main__":
     parser.add_argument("--train_steps", type=float, default=4e3)
     parser.add_argument("--seeds", type=int, default=5)
     parser.add_argument("--points", type=int, default=10)
+    parser.add_argument("--bsize", type=int, default=256)
+    parser.add_argument("--mtm_path", type=str, required=True)
+    parser.add_argument("--dti_path", type=str, required=True)
     args = parser.parse_args()
 
     start = time.time()
