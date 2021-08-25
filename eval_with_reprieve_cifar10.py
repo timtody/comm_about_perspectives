@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import jax
-import torchvision
 import reprieve
 from reprieve.algorithms import mlp as alg
 from mnist import MNISTDataset

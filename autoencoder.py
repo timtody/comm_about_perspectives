@@ -145,28 +145,28 @@ class AutoEncoder(_AutoEncoder, nn.Module):
 
 
 class CifarAutoEncoder(_AutoEncoder, nn.Module):
-    def __init__(self, lr=0.001, name=None, n_latent_channels=3):
+    def __init__(self, lr=0.001, name=None, latent_dim=2500):
         super().__init__()
-        self._encoder = cifar_encoder(n_latent_channels=n_latent_channels)
-        self._decoder = cifar_decoder(n_latent_channels=n_latent_channels)
+        self._encoder = cifar_encoder(latent_dim)
+        self._decoder = cifar_decoder(latent_dim)
         self.opt = optim.Adam(self.parameters(), lr=lr)
         self.name = name
 
 
-def cifar_encoder(n_latent_channels):
+def cifar_encoder(latent_dim):
     return nn.Sequential(
         nn.Conv2d(1, 16, 4),
         nn.ELU(),
         nn.Conv2d(16, 16, 4),
         nn.ELU(),
         nn.Flatten(),
-        nn.Linear(10816, 2500),
+        nn.Linear(10816, latent_dim),
     )
 
 
-def cifar_decoder(n_latent_channels):
+def cifar_decoder(latent_dim):
     return nn.Sequential(
-        nn.Linear(2500, 10816),
+        nn.Linear(latent_dim, 10816),
         nn.Unflatten(1, (16, 26, 26)),
         nn.ELU(),
         nn.ConvTranspose2d(16, 16, 4),

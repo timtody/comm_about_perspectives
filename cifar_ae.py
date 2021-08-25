@@ -1,19 +1,12 @@
+import argparse
+
 import wandb
 import torch
 import torch.nn.functional as F
 from autoencoder import CifarAutoEncoder
 import matplotlib.pyplot as plt
-from typing import NamedTuple
 from cifar import CifarDataset
 from experiments.shared_ref_mnist import MLP
-
-
-class Config(NamedTuple):
-    lr: float = 0.0005
-    bsize: int = 1024
-    eval_steps: int = 5000
-    n_classes: int = 10
-    n_latent_channels: int = 1
 
 
 def log_reconstructions(ae, dataset, dev):
@@ -42,26 +35,25 @@ def predict_classes(cfg, ae, dataset, dev, step):
         )
         latent = ae.encode(ims).flatten(start_dim=1)
         loss_latent = mlp.train(latent, labels)
-        acc_latent = mlp.compute_acc(latent, labels, topk=5)
+        acc_latent = mlp.compute_acc(latent, labels, topk=cfg.topk)
         test_acc_latent = mlp.compute_acc(
-            ae.encode(test_ims).flatten(start_dim=1), test_targets, topk=5
+            ae.encode(test_ims).flatten(start_dim=1), test_targets, topk=cfg.topk
         )
         wandb.log(
             {
                 f"mlp loss": loss_latent,
                 f"mlp acc train": acc_latent,
-                f"mlp acc test": test_acc_latent,
+                f"mlp acc test": test_acc_latent
             }
         )
 
 
-def main():
-    cfg = Config()
+def main(cfg):
     assert cfg.n_classes == 10 or cfg.n_classes == 100, "10 or 100 classes only"
     wandb.init(
-        project="cifar-100-autoencoder", entity="origin-flowers", config=cfg._asdict()
+        project="cifar-100-autoencoder", entity="origin-flowers", config=cfg
     )
-    ae = CifarAutoEncoder(lr=cfg.lr, n_latent_channels=cfg.n_latent_channels)
+    ae = CifarAutoEncoder(lr=cfg.lr, latent_dim=cfg.latent_dim)
     wandb.watch(ae)
     dataset = CifarDataset(f"CIFAR{cfg.n_classes}")
 
@@ -73,16 +65,25 @@ def main():
         ae.opt.zero_grad()
         latent = ae.encode(batch.to(dev))
         reconstruction = ae.decode(latent)
-        loss = F.mse_loss(reconstruction, batch.to(dev)) + latent.mean()
+        loss = F.mse_loss(reconstruction, batch.to(dev)) + latent.abs().mean()
         loss.backward()
         ae.opt.step()
         wandb.log({"Reconstruction loss": loss.item()})
         if i % 1000 == 0:
             log_reconstructions(ae, dataset, dev)
 
-        if i % 5000 == 0:
+        if i % cfg.predict_every == 0:
             predict_classes(cfg, ae, dataset, dev, i)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--bsize", type=int, default=1024)
+    parser.add_argument("--eval_steps", type=int, default=5000)
+    parser.add_argument("--n_classes", type=int, default=100)
+    parser.add_argument("--topk", type=int, default=5)
+    parser.add_argument("--predict_every", type=int, default=5000)
+    parser.add_argument("--latent_dim", type=int, default=2500)
+    args = parser.parse_args()
+    main(args)

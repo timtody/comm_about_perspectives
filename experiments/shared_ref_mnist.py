@@ -34,6 +34,7 @@ class Config(NamedTuple):
     nagents: int = 3
     ngpus: int = 1
     log_every: int = 50  # how often we write to readers / tb
+    latent_dim: int = 4000
 
     # message boundary
     nodetach: bool = False
@@ -151,7 +152,7 @@ class Experiment(BaseExperiment):
         name: str,
     ):
         if self.cfg.dataset == "CIFAR100" or self.cfg.dataset == "CIFAR10":
-            return CifarAutoEncoder(self.cfg.lr, name).to(self.dev)
+            return CifarAutoEncoder(self.cfg.lr, name, self.cfg.latent_dim).to(self.dev)
         else:
             return AutoEncoder(
                 self.cfg.latent_dim,
