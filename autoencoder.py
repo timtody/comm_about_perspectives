@@ -159,7 +159,7 @@ def cifar_encoder(n_latent_channels):
         nn.ELU(),
         nn.Conv2d(16, 16, 4),
         # nn.ELU(),
-        # nn.Conv2d(64, 64, 5),
+        # nn.Conv2d(64, 64, 5),ws
         # nn.ELU(),
         # nn.Conv2d(64, 64, 5),
         # nn.ELU(),

@@ -5,7 +5,7 @@ from typing import List
 import pandas as pd
 
 
-def series_to_mean(df, threshold=4800, add_params=()):
+def series_to_mean(df, threshold=24000, add_params=()):
     df = df[df["Step"] > threshold]
     groups = df.groupby(
         ["Rank", "Metric", "Type", "Agent", "Epoch", *add_params], as_index=False

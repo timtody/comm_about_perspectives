@@ -498,10 +498,10 @@ def plot_swap_and_agreement():
 
 def plot_perspective_nagents_robustness():
     path_perspective_centralised = (
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-22/22-59-23"
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00"
     )
     path_no_perspective_centralised = (
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-22/22-59-23"
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00"
     )
 
     path_nagents_centralised = (
