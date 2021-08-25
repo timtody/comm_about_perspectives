@@ -10,8 +10,8 @@ from experiments.shared_ref_mnist import MLP
 
 class Config(NamedTuple):
     lr: float = 0.0005
-    bsize: int = 512
-    eval_steps: int = 20000
+    bsize: int = 1024
+    eval_steps: int = 10000
     n_classes: int = 10
     n_latent_channels: int = 1
 
@@ -41,6 +41,8 @@ def predict_classes(cfg, ae, dataset, dev, step):
             dataset.sample_with_label(cfg.bsize),
         )
         latent = ae.encode(ims).flatten(start_dim=1)
+        print(latent.size())
+        exit(1)
         loss_latent = mlp.train(latent, labels)
         acc_latent = mlp.compute_acc(latent, labels)
         test_acc_latent = mlp.compute_acc(
@@ -80,7 +82,7 @@ def main():
         if i % 1000 == 0:
             log_reconstructions(ae, dataset, dev)
 
-        if i % 50000 == 0:
+        if i % 5000 == 0:
             predict_classes(cfg, ae, dataset, dev, i)
 
 

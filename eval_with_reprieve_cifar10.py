@@ -49,7 +49,7 @@ def evaluate_representations(
         use_vmap=args.use_vmap,
         cache_data=args.cache_data,
         verbose=True,
-        batch_size=4
+        batch_size=128
     )
     results = raw_loss_data_estimator.compute_curve(n_points=args.points)
     results["name"] = name
@@ -76,7 +76,7 @@ def evaluate_experiment(
             ae.load_state_dict(
                 torch.load(path_dti + ("/baseline.pt" if i == 0 else "/baseline_2.pt"))
             )
-            repres = ae.encode(data_x)
+            repres = ae.encode(data_x).detach()
             results = evaluate_representations(repres, data_y, 10, (7744,), args, "AE")
             results["Agent"] = i
             result_df_container.append(results)
@@ -84,7 +84,7 @@ def evaluate_experiment(
         for i in range(3):
             ae = CifarAutoEncoder()
             ae.load_state_dict(torch.load(path_dti + f"/{string.ascii_uppercase[i]}.pt"))
-            repres = ae.encode(data_x)
+            repres = ae.encode(data_x).detach()
             results = evaluate_representations(repres, data_y, 10, (7744,), args, "DTI")
             results["Agent"] = i
             result_df_container.append(results)
@@ -93,7 +93,7 @@ def evaluate_experiment(
         for i in range(3):
             ae = CifarAutoEncoder()
             ae.load_state_dict(torch.load(path_mtm + f"/{string.ascii_uppercase[i]}.pt"))
-            repres = ae.encode(data_x)
+            repres = ae.encode(data_x).detach()
             results = evaluate_representations(repres, data_y, 10, (7744,), args, "AE+MTM")
             results["Agent"] = i
             result_df_container.append(results)
