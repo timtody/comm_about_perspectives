@@ -35,6 +35,7 @@ class Config(NamedTuple):
     ngpus: int = 1
     log_every: int = 50  # how often we write to readers / tb
     latent_dim: int = 4000
+    topk: int = 5
 
     # message boundary
     nodetach: bool = False
