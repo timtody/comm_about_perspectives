@@ -11,7 +11,7 @@ from experiments.shared_ref_mnist import MLP
 class Config(NamedTuple):
     lr: float = 0.0005
     bsize: int = 1024
-    eval_steps: int = 10000
+    eval_steps: int = 5000
     n_classes: int = 10
     n_latent_channels: int = 1
 
