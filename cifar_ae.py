@@ -41,8 +41,6 @@ def predict_classes(cfg, ae, dataset, dev, step):
             dataset.sample_with_label(cfg.bsize),
         )
         latent = ae.encode(ims).flatten(start_dim=1)
-        print(latent.size())
-        exit(1)
         loss_latent = mlp.train(latent, labels)
         acc_latent = mlp.compute_acc(latent, labels, topk=5)
         test_acc_latent = mlp.compute_acc(

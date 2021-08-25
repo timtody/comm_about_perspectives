@@ -392,7 +392,7 @@ class Experiment(BaseExperiment):
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size: int, nclasses: int):
+    def __init__(self, input_size: int, nclasses: int, layer_sizes=()):
         super().__init__()
         self.l = nn.Linear(input_size, nclasses)
         self.opt = optim.Adam(self.parameters())
