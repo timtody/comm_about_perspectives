@@ -17,4 +17,4 @@ module load python/3.8.8
 
 set -x                                          # activating echo of launched commands
 
-srun python eval_with_reprieve_cifar10.py
+srun python eval_with_reprieve_cifar10.py --mtm_path $SCRATCH/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00/eta_ae:0.81-eta_lsa:0.14-eta_msa:0.95-eta_dsa:0.01-sigma:0.67-nagents:3-/params/step_49999/ --dti_path $SCRATCH/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00/eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-sigma:0.67-nagents:3-/params/step_49999/
