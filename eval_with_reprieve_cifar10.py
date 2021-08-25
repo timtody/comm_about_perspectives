@@ -143,7 +143,7 @@ def main(args):
 
     ds = MNISTDataset()
     data_x, data_y = ds.test_set.data.unsqueeze(1) / 255.0, ds.test_set.targets
-    results_path = "results/full_res.csv"
+    results_path = "results/full_res_cifar.csv"
 
     if not os.path.exists(results_path):
         results = evaluate_experiment(
