@@ -10,15 +10,9 @@ from experiments.shared_ref_mnist import MLP
 
 class Config(NamedTuple):
     lr: float = 0.0005
-<<<<<<< HEAD
     bsize: int = 1024
     eval_steps: int = 10000
     n_classes: int = 10
-=======
-    bsize: int = 64
-    eval_steps: int = 5000
-    n_classes: int = 100
->>>>>>> 800e0901075bde87ebc9e56ed9306bd83548a0ca
     n_latent_channels: int = 1
 
 
@@ -88,11 +82,7 @@ def main():
         if i % 1000 == 0:
             log_reconstructions(ae, dataset, dev)
 
-<<<<<<< HEAD
         if i % 5000 == 0:
-=======
-        if i % 1000 == 0:
->>>>>>> 800e0901075bde87ebc9e56ed9306bd83548a0ca
             predict_classes(cfg, ae, dataset, dev, i)
 
 
