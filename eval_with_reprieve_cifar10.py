@@ -49,6 +49,7 @@ def evaluate_representations(
         use_vmap=args.use_vmap,
         cache_data=args.cache_data,
         verbose=True,
+        batch_size=4
     )
     results = raw_loss_data_estimator.compute_curve(n_points=args.points)
     results["name"] = name
@@ -60,7 +61,7 @@ def evaluate_experiment(
 ) -> pd.DataFrame:
     result_df_container = []
 
-    for path_dti in glob.glob(f"{path_dti}/*"):
+    for path_dti in glob.glob(f"{path_dti}/*")[:3]:
         for i in range(2):
             ae = CifarAutoEncoder()
             repres = ae.encode(data_x).detach()
@@ -69,15 +70,14 @@ def evaluate_experiment(
             )
             results["Agent"] = i
             result_df_container.append(results)
-        break
 
         for i in range(2):
-            ae = CifarAutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=49)
+            ae = CifarAutoEncoder()
             ae.load_state_dict(
                 torch.load(path_dti + ("/baseline.pt" if i == 0 else "/baseline_2.pt"))
             )
             repres = ae.encode(data_x)
-            results = evaluate_representations(repres, data_y, 10, (30,), args, "AE")
+            results = evaluate_representations(repres, data_y, 10, (7744,), args, "AE")
             results["Agent"] = i
             result_df_container.append(results)
 
@@ -85,22 +85,21 @@ def evaluate_experiment(
             ae = CifarAutoEncoder()
             ae.load_state_dict(torch.load(path_dti + f"/{string.ascii_uppercase[i]}.pt"))
             repres = ae.encode(data_x)
-            results = evaluate_representations(repres, data_y, 10, (30,), args, "DTI")
+            results = evaluate_representations(repres, data_y, 10, (7744,), args, "DTI")
             results["Agent"] = i
             result_df_container.append(results)
 
-    for path_mtm in glob.glob(f"{path_mtm}/*"):
-        break
+    for path_mtm in glob.glob(f"{path_mtm}/*")[:3]:
         for i in range(3):
             ae = CifarAutoEncoder()
             ae.load_state_dict(torch.load(path_mtm + f"/{string.ascii_uppercase[i]}.pt"))
             repres = ae.encode(data_x)
-            results = evaluate_representations(repres, data_y, 10, (30,), args, "AE+MTM")
+            results = evaluate_representations(repres, data_y, 10, (7744,), args, "AE+MTM")
             results["Agent"] = i
             result_df_container.append(results)
 
-        results = pd.concat(result_df_container)
-        return results
+    results = pd.concat(result_df_container)
+    return results
 
 
 def plot_curves(results, ns, path):
@@ -147,9 +146,9 @@ def main(args):
 
     if not os.path.exists(results_path):
         results = evaluate_experiment(
-            "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00/"
+            "results/reprieve/cifar/19-16-00/"
             "eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-sigma:0.67-nagents:3-/params/step_49999",
-            "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00/"
+            "results/reprieve/cifar/19-16-00/"
             "eta_ae:0.0-eta_lsa:0.0-eta_msa:1.0-eta_dsa:0.0-sigma:0.67-nagents:3-/params/step_49999",
             data_x,
             data_y,
