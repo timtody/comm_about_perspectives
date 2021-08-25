@@ -51,6 +51,7 @@ def evaluate_representations(
         verbose=True,
         batch_size=args.bsize,
     )
+    results = raw_loss_data_estimator.compute_curve(n_points=args.points)
     results["name"] = name
     return results
 
