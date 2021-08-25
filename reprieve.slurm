@@ -12,7 +12,7 @@
 #SBATCH --cpus-per-task=2                      # reserving 40 CPUs per task (and associated memory)
 
 module purge                                    # purging modules inherited by default
-module load python/3.8.2
+module load python/3.8.8
 
 
 set -x                                          # activating echo of launched commands
