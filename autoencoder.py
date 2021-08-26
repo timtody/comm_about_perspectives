@@ -158,17 +158,17 @@ def cifar_encoder(latent_dim):
         nn.Conv2d(1, 16, 4),
         nn.ELU(),
         nn.Conv2d(16, 16, 4),
-        nn.ELU(),
-        nn.Flatten(),
-        nn.Linear(10816, latent_dim),
+        # nn.ELU(),
+        # nn.Flatten(),
+        # nn.Linear(10816, latent_dim),
     )
 
 
 def cifar_decoder(latent_dim):
     return nn.Sequential(
-        nn.Linear(latent_dim, 10816),
-        nn.Unflatten(1, (16, 26, 26)),
-        nn.ELU(),
+        # nn.Linear(latent_dim, 10816),
+        # nn.Unflatten(1, (16, 26, 26)),
+        # nn.ELU(),
         nn.ConvTranspose2d(16, 16, 4),
         nn.ELU(),
         nn.ConvTranspose2d(16, 1, 4),

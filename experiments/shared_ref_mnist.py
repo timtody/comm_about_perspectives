@@ -329,9 +329,11 @@ class Experiment(BaseExperiment):
                 # reconstruction = agent(ims)
 
                 loss_latent = mlp.train(latent, labels)
-                acc_latent = mlp.compute_acc(latent, labels)
+                acc_latent = mlp.compute_acc(latent, labels, topk=self.cfg.topk)
                 test_acc_latent = mlp.compute_acc(
-                    agent.encode(test_ims).flatten(start_dim=1), test_targets
+                    agent.encode(test_ims).flatten(start_dim=1),
+                    test_targets,
+                    topk=self.cfg.topk,
                 )
 
                 # loss_rec = mlp_rec.train(reconstruction, labels)
