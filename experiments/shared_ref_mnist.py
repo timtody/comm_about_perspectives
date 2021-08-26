@@ -34,7 +34,7 @@ class Config(NamedTuple):
     nagents: int = 3
     ngpus: int = 1
     log_every: int = 50  # how often we write to readers / tb
-    latent_dim: int = 4000
+    latent_dim: int = 2000
     topk: int = 5
 
     # message boundary
