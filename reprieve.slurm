@@ -8,11 +8,12 @@
 #SBATCH --time=20:00:00                         # maximum allocation time "(HH:MM:SS)"
 #SBATCH --nodes=1                               # reserving 1 node
 #SBATCH --ntasks=1                              # reserving 9 tasks (or MPI processes)
-#SBATCH --gres=gpu:1                            # reserving 4 GPUs
-#SBATCH --cpus-per-task=2                      # reserving 40 CPUs per task (and associated memory)
+#SBATCH --gres=gpu:1                            # reserving 1 GPU
+#SBATCH --cpus-per-task=2                      # reserving 2 CPUs per task (and associated memory)
 
 module purge                                    # purging modules inherited by default
 module load python/3.8.8
+module load cudnn/8.0.4.30-cuda-10.2
 
 
 set -x                                          # activating echo of launched commands
