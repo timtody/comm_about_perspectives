@@ -95,7 +95,7 @@ def eval_fn(mlp, batch, repr_fn=lambda x: x) -> tuple:
     with torch.no_grad():
         prediction = mlp(repr_fn(transform(X)))
         loss = f.cross_entropy(prediction, torch.tensor(y).to(dev))
-        accuracy = (prediction.argmax(dim=1) == torch.tensor(y)).float().mean()
+        accuracy = (prediction.argmax(dim=1) == torch.tensor(y).to(dev)).float().mean()
     return loss.item(), accuracy.item()
 
 
