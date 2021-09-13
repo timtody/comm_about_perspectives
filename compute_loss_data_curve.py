@@ -78,14 +78,17 @@ def transform(x):
     return torch.tensor(x).mean(dim=1, keepdim=True).float().to(dev)
 
 
-def train_fn(mlp: MLP, batch, opt, repr_fn=lambda x: x) -> MLP:
+def train_fn(mlp: MLP, batch, opt, train_steps, dataset_size, repr_fn=lambda x: x) -> MLP:
     dev = get_dev()
     X, y = batch
-    predictions = mlp(repr_fn(transform(X)))
-    error = f.cross_entropy(predictions, torch.tensor(y).to(dev))
-    opt.zero_grad()
-    error.backward()
-    opt.step()
+    dataset_blowup_factor = int(dataset_size / len(X))
+    X = np.concatenate(dataset_blowup_factor * [X], axis=1)
+    for _ in range(train_steps):
+        predictions = mlp(repr_fn(transform(X)))
+        error = f.cross_entropy(predictions, torch.tensor(y).to(dev))
+        opt.zero_grad()
+        error.backward()
+        opt.step()
     return mlp
 
 
@@ -113,7 +116,12 @@ def get_dev(use_gpu=True):
 
 
 def compute_curve(
-    X: np.ndarray, y: np.ndarray, ae: CifarAutoEncoder, sizes: np.ndarray, rank: int
+    X: np.ndarray,
+    y: np.ndarray,
+    ae: CifarAutoEncoder,
+    sizes: np.ndarray,
+    train_steps: int,
+    rank: int,
 ) -> pd.DataFrame:
     data = []
     dev = get_dev()
@@ -125,12 +133,13 @@ def compute_curve(
         latent_size = reduce(lambda a, b: a * b, ae.encode(transform(X)).size()[1:])
         mlp = MLP(latent_size, 10).to(dev)
         opt = optim.Adam(mlp.parameters())
-        for _ in range(10):
-            mlp = train_fn(mlp, (X_train, y_train), opt, repr_fn=ae.encode)
-            loss, acc = eval_fn(mlp, (X_test, y_test), repr_fn=ae.encode)
-            print(loss, acc)
+        mlp = train_fn(
+            mlp, (X_train, y_train), opt, train_steps, sizes[-1], repr_fn=ae.encode
+        )
+        loss, acc = eval_fn(mlp, (X_test, y_test), repr_fn=ae.encode)
         data.append((rank, size, "Loss", loss))
         data.append((rank, size, "Accuracy", acc))
+
     df = pd.DataFrame(data, columns=["Rank", "Size", "Metric", "Value"])
     return df
 
@@ -156,12 +165,15 @@ def gather_results(
     X: np.ndarray,
     y: np.ndarray,
     sizes: np.ndarray,
+    train_steps: int,
     seeds: int,
     weights_path: str,
     use_gpu: bool,
 ) -> pd.DataFrame:
     results = [
-        compute_curve(X, y, load_encoder(weights_path, rank, use_gpu), sizes, rank)
+        compute_curve(
+            X, y, load_encoder(weights_path, rank, use_gpu), sizes, train_steps, rank
+        )
         for rank in range(seeds)
     ]
     return pd.concat(results)
@@ -174,7 +186,9 @@ def main(args: argparse.Namespace):
         dataset = CifarDataset(f"CIFAR{args.n_classes}")
         X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
 
-        results = gather_results(X, y, sizes, args.seeds, args.weights_path, args.use_gpu)
+        results = gather_results(
+            X, y, sizes, args.train_steps, args.seeds, args.weights_path, args.use_gpu
+        )
         results.to_csv("results/cifar_curves.csv")
     plot_curves(pd.read_csv("results/cifar_curves.csv"), sizes, "results/testtest")
 
@@ -184,9 +198,9 @@ if __name__ == "__main__":
     parser.add_argument("--min_size", type=int, default=10)
     parser.add_argument("--max_size", type=int, default=10000)
     parser.add_argument("--steps", type=int, default=10)
-    # parser.add_argument("--sizes", type=eval, default="[10, 100, 1000, 10000]")
     parser.add_argument("--interpolation_steps", type=int, default=10)
     parser.add_argument("--seeds", type=int, default=5)
+    parser.add_argument("--train_steps", type=int, default=int(1e5))
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
     parser.add_argument("--no_gpu", action="store_false", dest="use_gpu")
     parser.add_argument(
