@@ -9,7 +9,6 @@ from multiprocessing import Barrier
 from multiprocessing.context import Process
 from typing import Callable, Dict, List, NamedTuple, get_type_hints
 
-import c_types
 from reader.chunked_writer import MultiProcessingWriter, TidyReader
 from experiments.experiment import BaseExperiment
 

@@ -14,7 +14,6 @@ from autoencoder import AutoEncoder
 from autoencoder import CifarAutoEncoder
 from reader.chunked_writer import TidyReader
 from mnist import MNISTDataset
-from clutter import ClutterDataset
 from cifar import CifarDataset
 from torch.tensor import Tensor
 from torch.utils.tensorboard import SummaryWriter
@@ -102,8 +101,6 @@ class Experiment(BaseExperiment):
 
         if self.cfg.dataset == "MNIST":
             self.dataset = MNISTDataset()
-        elif self.cfg.dataset == "CLUTTER":
-            self.dataset = ClutterDataset()
         elif self.cfg.dataset == "CIFAR10":
             self.dataset = CifarDataset()
         elif self.cfg.dataset == "CIFAR100":
@@ -396,23 +393,24 @@ class Experiment(BaseExperiment):
 
 
 class MLP(nn.Module):
-    def __init__(self, input_size: int, nclasses: int, layer_sizes=()):
+    def __init__(self, input_size: int, nclasses: int):
         super().__init__()
-        self.l = nn.Linear(input_size, nclasses)
+        self.l = nn.Linear(input_size, 512)
+        self.l2 = nn.Linear(512, nclasses)
         self.opt = optim.Adam(self.parameters())
 
     def forward(self, x):
-        return self.l(x)
+        return self.l2(self.l(x))
 
     def compute_acc(self, ims, labels, topk=1):
-        _, pred = self.l(ims).topk(dim=1, k=topk)
+        _, pred = self.forward(ims).topk(dim=1, k=topk)
         acc = (labels.unsqueeze(1) == pred).any(dim=1).float().mean()
         return acc.item()
 
     def train(self, inputs, targets):
-        x = self.l(inputs)
-        loss = F.cross_entropy(x, targets)
         self.opt.zero_grad()
+        x = self.forward(inputs)
+        loss = F.cross_entropy(x, targets)
         loss.backward()
         self.opt.step()
         return loss.item()

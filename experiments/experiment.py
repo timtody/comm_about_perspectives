@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod, abstractstaticmethod
 from multiprocessing import Barrier
 from typing import Any, Dict, Literal, NamedTuple
 
-import c_types
 import matplotlib.pyplot as plt
 import numpy as np
 import torch

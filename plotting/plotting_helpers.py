@@ -41,9 +41,11 @@ def set_size(width, fraction=0.97, subplots=(1, 1), height_multiplier=1):
     # Figure width in inches
     fig_width_in = fig_width_pt * inches_per_pt
     # Figure height in inches
-    fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1]) * height_multiplier
+    fig_height_in = (
+        fig_width_in * golden_ratio * (subplots[0] / subplots[1]) * height_multiplier
+    )
 
-    return (fig_width_in, fig_height_in)
+    return fig_width_in, fig_height_in
 
 
 def set_tex_fonts(fontsize=10, label_fontsize=8, legend_fontsize=8):

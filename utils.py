@@ -5,6 +5,12 @@ from typing import List
 import pandas as pd
 
 
+def prepare_plot():
+    plt.clf()
+    set_tex_fonts(11, 8, 6)
+    set_palette()
+
+
 def series_to_mean(df, threshold=24000, add_params=()):
     df = df[df["Step"] > threshold]
     groups = df.groupby(
