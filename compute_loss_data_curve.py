@@ -13,6 +13,8 @@ from autoencoder import _AutoEncoder
 from functools import reduce
 import seaborn as sns
 import matplotlib.pyplot as plt
+import multiprocessing as mp
+from functools import partial
 
 
 class MLP(nn.Module):
@@ -124,11 +126,13 @@ def get_dev(use_gpu=True):
 def compute_curve(
     X: np.ndarray,
     y: np.ndarray,
-    ae: CifarAutoEncoder,
     sizes: np.ndarray,
     train_steps: int,
+    path: str,
+    use_gpu: bool,
     rank: int,
 ) -> pd.DataFrame:
+    ae = load_encoder(path, rank, use_gpu)
     data = []
     dev = get_dev()
     for size in sizes:
@@ -177,12 +181,17 @@ def gather_results(
     weights_path: str,
     use_gpu: bool,
 ) -> pd.DataFrame:
-    results = [
-        compute_curve(
-            X, y, load_encoder(weights_path, rank, use_gpu), sizes, train_steps, rank
+    with mp.Pool(seeds) as pool:
+        results = pool.map(
+            partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
+            range(seeds),
         )
-        for rank in range(seeds)
-    ]
+        # results = [
+        #     compute_curve(
+        #         X, y, load_encoder(weights_path, rank, use_gpu), sizes, train_steps, rank
+        #     )
+        #     for rank in range(seeds)
+        # ]
     return pd.concat(results)
 
 
