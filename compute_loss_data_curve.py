@@ -87,8 +87,10 @@ def train_fn(mlp: MLP, batch, opt, train_steps, dataset_size, repr_fn=lambda x: 
         X = np.concatenate(dataset_blowup_factor * [X], axis=0)
         y = np.concatenate(dataset_blowup_factor * [y], axis=0)
     for _ in range(train_steps):
-        predictions = mlp(repr_fn(transform(X)))
-        error = f.cross_entropy(predictions, torch.tensor(y).to(dev))
+        indices = np.random.randint(len(X), size=1024)
+        predictions = mlp(repr_fn(transform(X[indices])))
+        error = f.cross_entropy(predictions, torch.tensor(y[indices]).to(dev))
+        print(error)
         opt.zero_grad()
         error.backward()
         opt.step()
@@ -204,7 +206,7 @@ if __name__ == "__main__":
     parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--interpolation_steps", type=int, default=10)
     parser.add_argument("--seeds", type=int, default=5)
-    parser.add_argument("--train_steps", type=int, default=int(1e5))
+    parser.add_argument("--train_steps", type=int, default=int(1e4))
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
     parser.add_argument("--no_gpu", action="store_false", dest="use_gpu")
     parser.add_argument(
