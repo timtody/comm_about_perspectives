@@ -79,10 +79,10 @@ def transform(x):
 
 
 def train_fn(mlp: MLP, batch, opt, repr_fn=lambda x: x) -> MLP:
-    mlp.train()
+    dev = get_dev()
     X, y = batch
     predictions = mlp(repr_fn(transform(X)))
-    error = f.cross_entropy(predictions, torch.tensor(y))
+    error = f.cross_entropy(predictions, torch.tensor(y).to(dev))
     opt.zero_grad()
     error.backward()
     opt.step()
@@ -90,10 +90,11 @@ def train_fn(mlp: MLP, batch, opt, repr_fn=lambda x: x) -> MLP:
 
 
 def eval_fn(mlp, batch, repr_fn=lambda x: x) -> tuple:
+    dev = get_dev()
     X, y = batch
     with torch.no_grad():
         prediction = mlp(repr_fn(transform(X)))
-        loss = f.cross_entropy(prediction, torch.tensor(y))
+        loss = f.cross_entropy(prediction, torch.tensor(y).to(dev))
         accuracy = (prediction.argmax(dim=1) == torch.tensor(y)).float().mean()
     return loss.item(), accuracy.item()
 
