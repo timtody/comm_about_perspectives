@@ -212,6 +212,7 @@ def main(args: argparse.Namespace):
 
 
 if __name__ == "__main__":
+    mp.set_start_method("spawn")
     parser = argparse.ArgumentParser()
     parser.add_argument("--min_size", type=int, default=10)
     parser.add_argument("--max_size", type=int, default=10000)
