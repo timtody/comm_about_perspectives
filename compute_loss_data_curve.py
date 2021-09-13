@@ -15,6 +15,29 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
+class MLP(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_size=256):
+        super(MLP, self).__init__()
+        self.fc_1 = nn.Linear(input_dim, hidden_size)
+        self.fc_2 = nn.Linear(hidden_size, hidden_size)
+        self.fc_3 = nn.Linear(hidden_size, output_dim)
+
+    def forward(self, x):
+        x = f.elu(self.fc_1(x.flatten(start_dim=1)))
+        x = f.elu(self.fc_2(x))
+        x = f.elu(self.fc_3(x))
+        return x
+
+
+class CifarAutoEncoder(_AutoEncoder, nn.Module):
+    def __init__(self, lr=0.001, name=None):
+        super().__init__()
+        self._encoder = cifar_encoder()
+        self._decoder = cifar_decoder()
+        self.opt = optim.Adam(self.parameters(), lr=lr)
+        self.name = name
+
+
 def plot_curves(results, ns, path):
     sns.set_palette(sns.color_palette("Set1"))
     ax = sns.lineplot(
@@ -29,20 +52,11 @@ def plot_curves(results, ns, path):
     )
     # handles, labels = ax.get_legend_handles_labels()
     # ax.legend(handles=handles[1:], labels=labels[1:])
-    plt.yscale("log")
+    # plt.yscale("log")
     plt.xscale("log")
-    plt.ylabel("Validation loss")
+    plt.ylabel("Accuracy")
     plt.xlabel("Dataset size")
     plt.savefig(f"{path}_reprieve_curves.pdf")
-
-
-class CifarAutoEncoder(_AutoEncoder, nn.Module):
-    def __init__(self, lr=0.001, name=None):
-        super().__init__()
-        self._encoder = cifar_encoder()
-        self._decoder = cifar_decoder()
-        self.opt = optim.Adam(self.parameters(), lr=lr)
-        self.name = name
 
 
 def cifar_encoder():
@@ -59,18 +73,6 @@ def cifar_decoder():
         nn.ELU(),
         nn.ConvTranspose2d(16, 1, 4),
     )
-
-
-class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_size=512):
-        super(MLP, self).__init__()
-        self.fc_1 = nn.Linear(input_dim, hidden_size)
-        self.fc_2 = nn.Linear(hidden_size, output_dim)
-
-    def forward(self, x):
-        x = f.elu(self.fc_1(x.flatten(start_dim=1)))
-        x = f.elu(self.fc_2(x))
-        return x
 
 
 def transform(x):
@@ -196,7 +198,9 @@ def main(args: argparse.Namespace):
             X, y, sizes, args.train_steps, args.seeds, args.weights_path, args.use_gpu
         )
         results.to_csv("results/cifar_curves.csv")
-    plot_curves(pd.read_csv("results/cifar_curves.csv"), sizes, "results/testtest")
+    df = pd.read_csv("results/cifar_curves.csv")
+    df = df[df.Metric == "Accuracy"]
+    plot_curves(df, sizes, "results/testtest")
 
 
 if __name__ == "__main__":
@@ -206,7 +210,7 @@ if __name__ == "__main__":
     parser.add_argument("--steps", type=int, default=10)
     parser.add_argument("--interpolation_steps", type=int, default=10)
     parser.add_argument("--seeds", type=int, default=5)
-    parser.add_argument("--train_steps", type=int, default=int(1e4))
+    parser.add_argument("--train_steps", type=int, default=int(1e5))
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
     parser.add_argument("--no_gpu", action="store_false", dest="use_gpu")
     parser.add_argument(
