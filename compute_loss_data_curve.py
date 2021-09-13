@@ -81,10 +81,11 @@ def transform(x):
 def train_fn(mlp: MLP, batch, opt, train_steps, dataset_size, repr_fn=lambda x: x) -> MLP:
     dev = get_dev()
     X, y = batch
-    dataset_blowup_factor = int(dataset_size / len(X))
+    dataset_blowup_factor = int(dataset_size * 0.8 / len(X))
     print("Increasing dataset by factor", dataset_blowup_factor)
     if dataset_blowup_factor > 1:
-        X = np.concatenate(dataset_blowup_factor * [X], axis=1)
+        X = np.concatenate(dataset_blowup_factor * [X], axis=0)
+        y = np.concatenate(dataset_blowup_factor * [y], axis=0)
     for _ in range(train_steps):
         predictions = mlp(repr_fn(transform(X)))
         error = f.cross_entropy(predictions, torch.tensor(y).to(dev))
