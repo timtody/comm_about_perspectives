@@ -92,7 +92,6 @@ def train_fn(mlp: MLP, batch, opt, train_steps, dataset_size, repr_fn=lambda x: 
         indices = np.random.randint(len(X), size=1024)
         predictions = mlp(repr_fn(transform(X[indices])))
         error = f.cross_entropy(predictions, torch.tensor(y[indices]).to(dev))
-        print(error)
         opt.zero_grad()
         error.backward()
         opt.step()
