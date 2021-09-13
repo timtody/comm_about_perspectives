@@ -82,7 +82,9 @@ def train_fn(mlp: MLP, batch, opt, train_steps, dataset_size, repr_fn=lambda x: 
     dev = get_dev()
     X, y = batch
     dataset_blowup_factor = int(dataset_size / len(X))
-    X = np.concatenate(dataset_blowup_factor * [X], axis=1)
+    print("Increasing dataset by factor", dataset_blowup_factor)
+    if dataset_blowup_factor > 1:
+        X = np.concatenate(dataset_blowup_factor * [X], axis=1)
     for _ in range(train_steps):
         predictions = mlp(repr_fn(transform(X)))
         error = f.cross_entropy(predictions, torch.tensor(y).to(dev))
@@ -126,6 +128,7 @@ def compute_curve(
     data = []
     dev = get_dev()
     for size in sizes:
+        print("Rank", rank, "working on size", size)
         indices = np.random.randint(len(y), size=int(size))
         X_sub, y_sub = X[indices], y[indices]
         X_train, X_test = split(X_sub)
