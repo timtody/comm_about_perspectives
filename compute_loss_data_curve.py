@@ -74,7 +74,8 @@ class MLP(nn.Module):
 
 
 def transform(x):
-    return torch.tensor(x).mean(dim=1, keepdim=True).float()
+    dev = get_dev()
+    return torch.tensor(x).mean(dim=1, keepdim=True).float().to(dev)
 
 
 def train_fn(mlp: MLP, batch, opt, repr_fn=lambda x: x) -> MLP:
@@ -102,17 +103,26 @@ def split(x: np.ndarray, train_size=0.8):
     return x[:split_index], x[split_index:]
 
 
+def get_dev(use_gpu=True):
+    return (
+        torch.device("cuda")
+        if torch.cuda.is_available() and use_gpu
+        else torch.device("cpu")
+    )
+
+
 def compute_curve(
     X: np.ndarray, y: np.ndarray, ae: CifarAutoEncoder, sizes: np.ndarray, rank: int
 ) -> pd.DataFrame:
     data = []
+    dev = get_dev()
     for size in sizes:
         indices = np.random.randint(len(y), size=int(size))
         X_sub, y_sub = X[indices], y[indices]
         X_train, X_test = split(X_sub)
         y_train, y_test = split(y_sub)
         latent_size = reduce(lambda a, b: a * b, ae.encode(transform(X)).size()[1:])
-        mlp = MLP(latent_size, 10)
+        mlp = MLP(latent_size, 10).to(dev)
         opt = optim.Adam(mlp.parameters())
         for _ in range(10):
             mlp = train_fn(mlp, (X_train, y_train), opt, repr_fn=ae.encode)
@@ -137,6 +147,7 @@ def load_encoder(path, rank, use_gpu):
             map_location=dev,
         )
     )
+    cifar_ae.to(dev)
     return cifar_ae
 
 
