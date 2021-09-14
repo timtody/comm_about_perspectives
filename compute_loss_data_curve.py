@@ -180,8 +180,18 @@ def gather_results(
     weights_path: str,
     use_gpu: bool,
 ) -> pd.DataFrame:
+    # processes = []
+    # for rank in range(seeds):
+    #     p = mp.Process(
+    #         target=partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
+    #         args=(rank,),
+    #     )
+    #     p.start()
+    #     processes.append(p)
+    # for p in processes:
+    #     p.join()
     with mp.Pool(seeds) as pool:
-        results = pool.map(
+        results = pool.imap_unordered(
             partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
             range(seeds),
             chunksize=1,
