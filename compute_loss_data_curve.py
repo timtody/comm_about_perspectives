@@ -76,47 +76,51 @@ def cifar_decoder():
     )
 
 
-def transform(x):
-    dev = get_dev()
-    return torch.tensor(x).mean(dim=1, keepdim=True).float().to(dev)
+def transform(x) -> torch.Tensor:
+    """
+    Converts to greyscale and float representation
+    :param x: Tensor input
+    :return: Tensor
+    """
+    return x.mean(dim=1, keepdim=True).float()
 
 
-def train_fn(mlp: MLP, batch, opt, train_steps, dataset_size, repr_fn=lambda x: x) -> MLP:
-    dev = get_dev()
-    X, y = batch
+def train_fn(
+    mlp: MLP, batch, opt, train_steps, dataset_size, dev, repr_fn=lambda x: x
+) -> MLP:
+    X, y = map(lambda x: x.to(dev), batch)
     dataset_blowup_factor = int(dataset_size * 0.8 / len(X))
     print("Increasing dataset by factor", dataset_blowup_factor)
     if dataset_blowup_factor > 1:
-        X = np.concatenate(dataset_blowup_factor * [X], axis=0)
-        y = np.concatenate(dataset_blowup_factor * [y], axis=0)
+        X = torch.cat(dataset_blowup_factor * [X], dim=0)
+        y = torch.cat(dataset_blowup_factor * [y], dim=0)
     for _ in range(train_steps):
         indices = np.random.randint(len(X), size=1024)
         predictions = mlp(repr_fn(transform(X[indices])))
-        error = f.cross_entropy(predictions, torch.tensor(y[indices]).to(dev))
+        error = f.cross_entropy(predictions, y[indices].long())
         opt.zero_grad()
         error.backward()
         opt.step()
     return mlp
 
 
-def eval_fn(mlp, batch, repr_fn=lambda x: x) -> tuple:
-    dev = get_dev()
-    X, y = batch
+def eval_fn(mlp, batch, dev, repr_fn=lambda x: x) -> tuple:
+    X, y = map(lambda x: x.to(dev), batch)
     with torch.no_grad():
         prediction = mlp(repr_fn(transform(X)))
-        loss = f.cross_entropy(prediction, torch.tensor(y).to(dev))
-        accuracy = (prediction.argmax(dim=1) == torch.tensor(y).to(dev)).float().mean()
+        loss = f.cross_entropy(prediction, y.long())
+        accuracy = (prediction.argmax(dim=1) == y).float().mean()
     return loss.item(), accuracy.item()
 
 
 def split(x: np.ndarray, train_size=0.8):
     split_index = int(len(x) * train_size)
-    return x[:split_index], x[split_index:]
+    return torch.tensor(x[:split_index]).float(), torch.tensor(x[split_index:]).float()
 
 
-def get_dev(use_gpu=True):
+def get_dev(rank, use_gpu=True, ngpus=1):
     return (
-        torch.device("cuda")
+        torch.device(f"cuda:{rank % ngpus}")
         if torch.cuda.is_available() and use_gpu
         else torch.device("cpu")
     )
@@ -151,20 +155,20 @@ def compute_curve(
 ) -> None:
     ae = load_encoder(path, rank, use_gpu)
     data = []
-    dev = get_dev()
+    dev = get_dev(rank)
     for size in sizes:
         print("Rank", rank, "working on size", size)
         indices = np.random.randint(len(y), size=int(size))
         X_sub, y_sub = X[indices], y[indices]
         X_train, X_test = split(X_sub)
         y_train, y_test = split(y_sub)
-        latent_size = reduce(lambda a, b: a * b, ae.encode(transform(X)).size()[1:])
+        latent_size = reduce(lambda a, b: a * b, ae.encode(transform(X_train)).size()[1:])
         mlp = MLP(latent_size, 10).to(dev)
         opt = optim.Adam(mlp.parameters())
         mlp = train_fn(
-            mlp, (X_train, y_train), opt, train_steps, sizes[-1], repr_fn=ae.encode
+            mlp, (X_train, y_train), opt, train_steps, sizes[-1], dev, repr_fn=ae.encode
         )
-        loss, acc = eval_fn(mlp, (X_test, y_test), repr_fn=ae.encode)
+        loss, acc = eval_fn(mlp, (X_test, y_test), dev, repr_fn=ae.encode)
         data.append((rank, size, "Loss", loss))
         data.append((rank, size, "Accuracy", acc))
 
@@ -236,4 +240,5 @@ if __name__ == "__main__":
     )
     parser.add_argument("--weights_path", type=str, required=True)
     parser.add_argument("--only_plot", action="store_true", dest="only_plot")
+    parser.add_argument("--ngpus", type=int, default=1)
     main(parser.parse_args())
