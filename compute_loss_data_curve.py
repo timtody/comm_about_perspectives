@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 import glob
 from functools import partial
+from utils import stem_to_params, path_to_stem
 
 
 class MLP(nn.Module):
@@ -162,7 +163,9 @@ def compute_curve(
         X_sub, y_sub = X[indices], y[indices]
         X_train, X_test = split(X_sub)
         y_train, y_test = split(y_sub)
-        latent_size = reduce(lambda a, b: a * b, ae.encode(transform(X_train)).size()[1:])
+        latent_size = reduce(
+            lambda a, b: a * b, ae.encode(transform(X_train).to(dev)).size()[1:]
+        )
         mlp = MLP(latent_size, 10).to(dev)
         opt = optim.Adam(mlp.parameters())
         mlp = train_fn(
@@ -210,11 +213,11 @@ def main(args: argparse.Namespace):
     if not args.only_plot:
         dataset = CifarDataset(f"CIFAR{args.n_classes}")
         X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
-        # results = []
-        # for path in glob.glob(args.weights_path + "/*"):
-        #     print(path)
-        #     print("---")
-        # exit(1)
+        results = []
+        for path in glob.glob(args.weights_path + "/*"):
+            params = stem_to_params(path_to_stem(path))
+            print(params)
+        exit(1)
         results = gather_results(
             X, y, sizes, args.train_steps, args.seeds, args.weights_path, args.use_gpu
         )

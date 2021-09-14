@@ -19,6 +19,10 @@ def series_to_mean(df, threshold=24000, add_params=()):
     return groups
 
 
+def path_to_stem(path: str):
+    return path.split("/")[-1]
+
+
 def stem_to_params(stem: str):
     """
     Helper function which takes in a path stem of the form "param:value-param2:value2..."
