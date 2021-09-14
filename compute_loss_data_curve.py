@@ -1,5 +1,4 @@
 import os
-
 import pandas as pd
 import numpy as np
 import torch
@@ -191,6 +190,7 @@ def gather_results(
 
 def main(args: argparse.Namespace):
     print("Cuda available:", torch.cuda.is_available())
+    print("Working on", os.cpu_count(), "cores.")
     sizes = np.logspace(np.log10(args.min_size), np.log10(args.max_size), num=args.steps)
     if not args.only_plot:
         dataset = CifarDataset(f"CIFAR{args.n_classes}")
