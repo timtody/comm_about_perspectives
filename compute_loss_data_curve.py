@@ -122,6 +122,23 @@ def get_dev(use_gpu=True):
     )
 
 
+def load_encoder(path, rank, use_gpu):
+    dev = (
+        torch.device("cuda")
+        if torch.cuda.is_available() and use_gpu
+        else torch.device("cpu")
+    )
+    cifar_ae = CifarAutoEncoder()
+    cifar_ae.load_state_dict(
+        torch.load(
+            os.path.join(path, "params", "step_49999", f"rank_{rank}", "A.pt"),
+            map_location=dev,
+        )
+    )
+    cifar_ae.to(dev)
+    return cifar_ae
+
+
 def compute_curve(
     X: np.ndarray,
     y: np.ndarray,
@@ -130,7 +147,8 @@ def compute_curve(
     path: str,
     use_gpu: bool,
     rank: int,
-) -> pd.DataFrame:
+    queue: mp.Queue,
+) -> None:
     ae = load_encoder(path, rank, use_gpu)
     data = []
     dev = get_dev()
@@ -151,24 +169,7 @@ def compute_curve(
         data.append((rank, size, "Accuracy", acc))
 
     df = pd.DataFrame(data, columns=["Rank", "Size", "Metric", "Value"])
-    return df
-
-
-def load_encoder(path, rank, use_gpu):
-    dev = (
-        torch.device("cuda")
-        if torch.cuda.is_available() and use_gpu
-        else torch.device("cpu")
-    )
-    cifar_ae = CifarAutoEncoder()
-    cifar_ae.load_state_dict(
-        torch.load(
-            os.path.join(path, "params", "step_49999", f"rank_{rank}", "A.pt"),
-            map_location=dev,
-        )
-    )
-    cifar_ae.to(dev)
-    return cifar_ae
+    queue.put(df)
 
 
 def gather_results(
@@ -180,22 +181,21 @@ def gather_results(
     weights_path: str,
     use_gpu: bool,
 ) -> pd.DataFrame:
-    # processes = []
-    # for rank in range(seeds):
-    #     p = mp.Process(
-    #         target=partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
-    #         args=(rank,),
-    #     )
-    #     p.start()
-    #     processes.append(p)
-    # for p in processes:
-    #     p.join()
-    with mp.Pool(processes=seeds) as pool:
-        results = pool.map(
-            partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
-            range(seeds),
-            chunksize=1,
+    result_q = mp.Queue()
+    processes = []
+    for rank in range(seeds):
+        p = mp.Process(
+            target=partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
+            args=(rank, result_q),
         )
+        p.start()
+        processes.append(p)
+    for p in processes:
+        p.join()
+
+    results = []
+    while not result_q.empty():
+        results.append(result_q.get())
     return pd.concat(results)
 
 
