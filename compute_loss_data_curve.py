@@ -46,19 +46,32 @@ def plot_curves(results, ns, path):
         data=results,
         x="Size",
         y="Value",
-        # hue="Metric",
+        hue="Run",
         legend="brief",
-        # style="name",
+        style="Run",
         markers=True,
         dashes=False,
     )
     # handles, labels = ax.get_legend_handles_labels()
     # ax.legend(handles=handles[1:], labels=labels[1:])
-    plt.yscale("log")
+    # plt.yscale("log")
     plt.xscale("log")
-    plt.ylabel("Loss")
+    plt.ylabel("Accuracy")
     plt.xlabel("Dataset size")
     plt.savefig(f"{path}_reprieve_curves.pdf")
+
+
+def map_params_to_name(params: dict):
+    if params["eta_msa"] == "1.0":
+        return "DTI"
+    if params["eta_msa"] == "0.74":
+        return "All"
+    if params["eta_msa"] == "0.95":
+        return "AE+MTM"
+    if params["eta_ae"] == "1.0" and params["eta_lsa"] == "0.1":
+        return "AE"
+    if params["eta_lsa"] == "0.1":
+        return "AE+MTM_pure"
 
 
 def cifar_encoder():
@@ -213,17 +226,18 @@ def main(args: argparse.Namespace):
     if not args.only_plot:
         dataset = CifarDataset(f"CIFAR{args.n_classes}")
         X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
-        # results = []
-        # for path in glob.glob(args.weights_path + "/*"):
-        #     params = stem_to_params(path_to_stem(path))
-        #     print(params)
-        # exit(1)
-        results = gather_results(
-            X, y, sizes, args.train_steps, args.seeds, args.weights_path, args.use_gpu
-        )
+        results = []
+        for path in glob.glob(args.weights_path + "/*"):
+            params = stem_to_params(path_to_stem(path))
+            df = gather_results(
+                X, y, sizes, args.train_steps, args.seeds, path, args.use_gpu
+            )
+            df["Run"] = map_params_to_name(params)
+            results.append(df)
+        results = pd.concat(results)
         results.to_csv("results/cifar_curves.csv")
     df = pd.read_csv("results/cifar_curves.csv")
-    df = df[df.Metric == "Loss"]
+    df = df[df.Metric == "Accuracy"]
     plot_curves(df, sizes, "results/testtest")
 
 
