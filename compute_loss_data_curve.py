@@ -184,6 +184,7 @@ def gather_results(
         results = pool.map(
             partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
             range(seeds),
+            chunksize=1,
         )
     return pd.concat(results)
 
