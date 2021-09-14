@@ -8,12 +8,12 @@ import torch.optim as optim
 import torch.nn.functional as f
 import argparse
 from cifar import CifarDataset
-from torch import Tensor
 from autoencoder import _AutoEncoder
 from functools import reduce
 import seaborn as sns
 import matplotlib.pyplot as plt
 import multiprocessing as mp
+import glob
 from functools import partial
 
 
@@ -54,9 +54,9 @@ def plot_curves(results, ns, path):
     )
     # handles, labels = ax.get_legend_handles_labels()
     # ax.legend(handles=handles[1:], labels=labels[1:])
-    # plt.yscale("log")
+    plt.yscale("log")
     plt.xscale("log")
-    plt.ylabel("Accuracy")
+    plt.ylabel("Loss")
     plt.xlabel("Dataset size")
     plt.savefig(f"{path}_reprieve_curves.pdf")
 
@@ -94,6 +94,7 @@ def train_fn(mlp: MLP, batch, opt, train_steps, dataset_size, repr_fn=lambda x: 
         indices = np.random.randint(len(X), size=1024)
         predictions = mlp(repr_fn(transform(X[indices])))
         error = f.cross_entropy(predictions, torch.tensor(y[indices]).to(dev))
+        print(error)
         opt.zero_grad()
         error.backward()
         opt.step()
@@ -186,12 +187,6 @@ def gather_results(
             partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
             range(seeds),
         )
-        # results = [
-        #     compute_curve(
-        #         X, y, load_encoder(weights_path, rank, use_gpu), sizes, train_steps, rank
-        #     )
-        #     for rank in range(seeds)
-        # ]
     return pd.concat(results)
 
 
@@ -201,13 +196,17 @@ def main(args: argparse.Namespace):
     if not args.only_plot:
         dataset = CifarDataset(f"CIFAR{args.n_classes}")
         X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
-
+        # results = []
+        # for path in glob.glob(args.weights_path + "/*"):
+        #     print(path)
+        #     print("---")
+        # exit(1)
         results = gather_results(
             X, y, sizes, args.train_steps, args.seeds, args.weights_path, args.use_gpu
         )
         results.to_csv("results/cifar_curves.csv")
     df = pd.read_csv("results/cifar_curves.csv")
-    df = df[df.Metric == "Accuracy"]
+    df = df[df.Metric == "Loss"]
     plot_curves(df, sizes, "results/testtest")
 
 
