@@ -213,11 +213,11 @@ def main(args: argparse.Namespace):
     if not args.only_plot:
         dataset = CifarDataset(f"CIFAR{args.n_classes}")
         X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
-        results = []
-        for path in glob.glob(args.weights_path + "/*"):
-            params = stem_to_params(path_to_stem(path))
-            print(params)
-        exit(1)
+        # results = []
+        # for path in glob.glob(args.weights_path + "/*"):
+        #     params = stem_to_params(path_to_stem(path))
+        #     print(params)
+        # exit(1)
         results = gather_results(
             X, y, sizes, args.train_steps, args.seeds, args.weights_path, args.use_gpu
         )
