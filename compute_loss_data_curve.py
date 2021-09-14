@@ -191,7 +191,7 @@ def gather_results(
     # for p in processes:
     #     p.join()
     with mp.Pool(processes=seeds) as pool:
-        results = pool.imap_unordered(
+        results = pool.map(
             partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
             range(seeds),
             chunksize=1,
