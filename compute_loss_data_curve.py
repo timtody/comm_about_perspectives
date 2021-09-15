@@ -40,9 +40,9 @@ class CifarAutoEncoder(_AutoEncoder, nn.Module):
         self.name = name
 
 
-def plot_curves(results, ns, path):
+def plot_curves(results, metric, path):
     sns.set_palette(sns.color_palette("Set1"))
-    ax = sns.lineplot(
+    sns.lineplot(
         data=results,
         x="Size",
         y="Value",
@@ -54,11 +54,12 @@ def plot_curves(results, ns, path):
     )
     # handles, labels = ax.get_legend_handles_labels()
     # ax.legend(handles=handles[1:], labels=labels[1:])
-    # plt.yscale("log")
+    if metric == "Loss":
+        plt.yscale("log")
     plt.xscale("log")
-    plt.ylabel("Accuracy")
+    plt.ylabel(metric)
     plt.xlabel("Dataset size")
-    plt.savefig(f"{path}_reprieve_curves.pdf")
+    plt.savefig(f"{path}reprieve_curves_{metric}.pdf")
 
 
 def map_params_to_name(params: dict):
@@ -167,6 +168,7 @@ def compute_curve(
     rank: int,
     queue: mp.Queue,
 ) -> None:
+    np.random.seed(123 + rank)
     ae = load_encoder(path, rank, use_gpu)
     data = []
     dev = get_dev(rank)
@@ -235,10 +237,11 @@ def main(args: argparse.Namespace):
             df["Run"] = map_params_to_name(params)
             results.append(df)
         results = pd.concat(results)
-        results.to_csv("results/cifar_curves.csv")
-    df = pd.read_csv("results/cifar_curves.csv")
-    df = df[df.Metric == "Accuracy"]
-    plot_curves(df, sizes, "results/testtest")
+        results.to_csv("results/data_curves/loss_acc_data.csv")
+    df = pd.read_csv("results/data_curves/loss_acc_data.csv")
+    df = df[df.Metric == args.metric]
+    df = df[df.Run != "All"]
+    plot_curves(df, args.metric, "results/data_curves/")
 
 
 if __name__ == "__main__":
@@ -253,7 +256,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
     parser.add_argument("--no_gpu", action="store_false", dest="use_gpu")
     parser.add_argument(
-        "--metric", type=str, default="accuracy", choices=("accuracy", "loss")
+        "--metric", type=str, default="accuracy", choices=("Accuracy", "Loss")
     )
     parser.add_argument("--weights_path", type=str, required=True)
     parser.add_argument("--only_plot", action="store_true", dest="only_plot")
