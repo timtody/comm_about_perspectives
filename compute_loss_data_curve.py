@@ -58,6 +58,7 @@ def create_run_folder(func):
 
 def plot_curves(df, metric):
     df = df[df.Metric == metric]
+    print(df)
     sns.set_palette(sns.color_palette("Set1"))
     sns.lineplot(
         data=df,
@@ -77,6 +78,7 @@ def plot_curves(df, metric):
     plt.ylabel(metric)
     plt.xlabel("Dataset size")
     plt.savefig(f"reprieve_curves_{metric}.pdf")
+    plt.clf()
 
 
 def map_params_to_name(params: dict):
@@ -158,7 +160,7 @@ def get_dev(rank, use_gpu=True, ngpus=1):
     )
 
 
-def load_encoder(path, rank, use_gpu):
+def load_encoder(path, rank, use_gpu, agent="A"):
     dev = (
         torch.device("cuda")
         if torch.cuda.is_available() and use_gpu
@@ -167,7 +169,7 @@ def load_encoder(path, rank, use_gpu):
     cifar_ae = CifarAutoEncoder()
     cifar_ae.load_state_dict(
         torch.load(
-            os.path.join(path, "params", "step_49999", f"rank_{rank}", "A.pt"),
+            os.path.join(path, "params", "step_49999", f"rank_{rank}", f"{agent}.pt"),
             map_location=dev,
         )
     )
@@ -186,28 +188,30 @@ def compute_curve(
     queue: mp.Queue,
 ) -> None:
     np.random.seed(123 + rank)
-    ae = load_encoder(path, rank, use_gpu)
+
     data = []
     dev = get_dev(rank)
-    for size in sizes:
-        print("Rank", rank, "working on size", size)
-        indices = np.random.randint(len(y), size=int(size))
-        X_sub, y_sub = X[indices], y[indices]
-        X_train, X_test = split(X_sub)
-        y_train, y_test = split(y_sub)
-        latent_size = reduce(
-            lambda a, b: a * b, ae.encode(transform(X_train).to(dev)).size()[1:]
-        )
-        mlp = MLP(latent_size, 10).to(dev)
-        opt = optim.Adam(mlp.parameters())
-        mlp = train_fn(
-            mlp, (X_train, y_train), opt, train_steps, sizes[-1], dev, repr_fn=ae.encode
-        )
-        loss, acc = eval_fn(mlp, (X_test, y_test), dev, repr_fn=ae.encode)
-        data.append((rank, size, "Loss", loss))
-        data.append((rank, size, "Accuracy", acc))
+    for agent in ["A", "B", "C"]:
+        ae = load_encoder(path, rank, use_gpu, agent)
+        for size in sizes:
+            print("Rank", rank, "working on size", size, "and agent", agent, ".")
+            indices = np.random.randint(len(y), size=int(size))
+            X_sub, y_sub = X[indices], y[indices]
+            X_train, X_test = split(X_sub)
+            y_train, y_test = split(y_sub)
+            latent_size = reduce(
+                lambda a, b: a * b, ae.encode(transform(X_train).to(dev)).size()[1:]
+            )
+            mlp = MLP(latent_size, 10).to(dev)
+            opt = optim.Adam(mlp.parameters())
+            mlp = train_fn(
+                mlp, (X_train, y_train), opt, train_steps, sizes[-1], dev, repr_fn=ae.encode
+            )
+            loss, acc = eval_fn(mlp, (X_test, y_test), dev, repr_fn=ae.encode)
+            data.append((rank, size, agent, "Loss", loss))
+            data.append((rank, size, agent, "Accuracy", acc))
 
-    df = pd.DataFrame(data, columns=["Rank", "Size", "Metric", "Value"])
+    df = pd.DataFrame(data, columns=["Rank", "Size", "Agent", "Metric", "Value"])
     queue.put(df)
 
 
@@ -242,7 +246,7 @@ def gather_results(
 def main(args: argparse.Namespace):
     print("Cuda available:", torch.cuda.is_available())
     print("Working on", os.cpu_count(), "cores and", args.seeds, "seeds.")
-    sizes = np.logspace(np.log10(args.min_size), np.log10(args.max_size), num=args.steps)
+    sizes = np.logspace(np.log10(args.min_size), np.log10(args.max_size), num=args.nsizes)
     dataset = CifarDataset(f"CIFAR{args.n_classes}", path=args.owd + "/data")
     X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
     results = []
@@ -263,8 +267,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--min_size", type=int, default=10)
     parser.add_argument("--max_size", type=int, default=10000)
-    parser.add_argument("--steps", type=int, default=10)
-    parser.add_argument("--interpolation_steps", type=int, default=10)
+    parser.add_argument("--nsizes", type=int, default=10)
     parser.add_argument("--seeds", type=int, default=5)
     parser.add_argument("--train_steps", type=int, default=int(1e5))
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
