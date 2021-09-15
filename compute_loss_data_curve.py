@@ -1,4 +1,5 @@
 import os
+import json
 import pandas as pd
 import numpy as np
 import torch
@@ -15,6 +16,7 @@ import multiprocessing as mp
 import glob
 from functools import partial
 from utils import stem_to_params, path_to_stem
+from functions import create_timestap_path
 
 
 class MLP(nn.Module):
@@ -40,10 +42,25 @@ class CifarAutoEncoder(_AutoEncoder, nn.Module):
         self.name = name
 
 
-def plot_curves(results, metric, path):
+def create_run_folder(func):
+    def wrapper(args):
+        args.owd = os.getcwd()
+        path = create_timestap_path()
+        os.makedirs(path, exist_ok=True)
+        os.chdir(path)
+        with open("cfg.json", "w") as f:
+            sorted_args = dict(sorted(vars(args).items(), key=lambda item: item[0]))
+            json.dump(sorted_args, f, indent=2)
+        return func(args)
+
+    return wrapper
+
+
+def plot_curves(df, metric):
+    df = df[df.Metric == metric]
     sns.set_palette(sns.color_palette("Set1"))
     sns.lineplot(
-        data=results,
+        data=df,
         x="Size",
         y="Value",
         hue="Run",
@@ -59,7 +76,7 @@ def plot_curves(results, metric, path):
     plt.xscale("log")
     plt.ylabel(metric)
     plt.xlabel("Dataset size")
-    plt.savefig(f"{path}reprieve_curves_{metric}.pdf")
+    plt.savefig(f"reprieve_curves_{metric}.pdf")
 
 
 def map_params_to_name(params: dict):
@@ -221,27 +238,24 @@ def gather_results(
     return pd.concat(results)
 
 
+@create_run_folder
 def main(args: argparse.Namespace):
     print("Cuda available:", torch.cuda.is_available())
     print("Working on", os.cpu_count(), "cores and", args.seeds, "seeds.")
     sizes = np.logspace(np.log10(args.min_size), np.log10(args.max_size), num=args.steps)
-    if not args.only_plot:
-        dataset = CifarDataset(f"CIFAR{args.n_classes}")
-        X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
-        results = []
-        for path in glob.glob(args.weights_path + "/*"):
-            params = stem_to_params(path_to_stem(path))
-            df = gather_results(
-                X, y, sizes, args.train_steps, args.seeds, path, args.use_gpu
-            )
-            df["Run"] = map_params_to_name(params)
-            results.append(df)
-        results = pd.concat(results)
-        results.to_csv("results/data_curves/loss_acc_data.csv")
-    df = pd.read_csv("results/data_curves/loss_acc_data.csv")
-    df = df[df.Metric == args.metric]
+    dataset = CifarDataset(f"CIFAR{args.n_classes}", path=args.owd + "/data")
+    X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
+    results = []
+    for path in glob.glob(args.owd + "/" + args.weights_path + "/*"):
+        params = stem_to_params(path_to_stem(path))
+        df = gather_results(X, y, sizes, args.train_steps, args.seeds, path, args.use_gpu)
+        df["Run"] = map_params_to_name(params)
+        results.append(df)
+    df = pd.concat(results)
+    df.to_csv("loss_acc_data.csv")
     df = df[df.Run != "All"]
-    plot_curves(df, args.metric, "results/data_curves/")
+    plot_curves(df, "Loss")
+    plot_curves(df, "Accuracy")
 
 
 if __name__ == "__main__":
@@ -255,9 +269,6 @@ if __name__ == "__main__":
     parser.add_argument("--train_steps", type=int, default=int(1e5))
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
     parser.add_argument("--no_gpu", action="store_false", dest="use_gpu")
-    parser.add_argument(
-        "--metric", type=str, default="accuracy", choices=("Accuracy", "Loss")
-    )
     parser.add_argument("--weights_path", type=str, required=True)
     parser.add_argument("--only_plot", action="store_true", dest="only_plot")
     parser.add_argument("--ngpus", type=int, default=1)

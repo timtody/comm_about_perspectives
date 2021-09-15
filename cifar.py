@@ -31,14 +31,14 @@ class Cifar10Wrapper(CifarMixin, CIFAR10):
 
 
 class CifarDataset:
-    def __init__(self, dataset="CIFAR10", colour=False) -> None:
+    def __init__(self, dataset="CIFAR10", colour=False, path="data") -> None:
         # CIFAR start here
         if dataset == "CIFAR10":
-            self.train = Cifar10Wrapper("data", train=True, download=True)
-            self.eval = Cifar10Wrapper("data", train=False, download=True)
+            self.train = Cifar10Wrapper(path, train=True, download=True)
+            self.eval = Cifar10Wrapper(path, train=False, download=True)
         elif dataset == "CIFAR100":
-            self.train = Cifar100Wrapper("data", train=True, download=True)
-            self.eval = Cifar100Wrapper("data", train=False, download=True)
+            self.train = Cifar100Wrapper(path, train=True, download=True)
+            self.eval = Cifar100Wrapper(path, train=False, download=True)
         # cifar data seems to be in the range 0 - 255
         self.transform = lambda x: torch.tensor(x / 255.0).float()
         self.colour = colour
@@ -68,8 +68,12 @@ class CifarDataset:
         subset_len = len(self.train.dict[digit])
 
         indices = np.random.randint(subset_len, size=bsize) % subset_len
-        return self.transform(self.train.dict[digit][indices]).permute([0, 3, 1, 2]).\
-            mean(dim=1, keepdim=True).float()
+        return (
+            self.transform(self.train.dict[digit][indices])
+            .permute([0, 3, 1, 2])
+            .mean(dim=1, keepdim=True)
+            .float()
+        )
 
     def sample_all_digits_once(self) -> torch.Tensor:
         # TODO: Implement

@@ -53,6 +53,11 @@ def create_exp_name_and_datetime_path(experiment):
     return hms_path
 
 
+def create_timestap_path():
+    ymd_path = os.path.join("results", time.strftime("%Y-%m-%d"))
+    return os.path.join(ymd_path, time.strftime("%H-%M-%S"))
+
+
 def start_procs(
     fn: Callable,
     cfg: Dict = {},
