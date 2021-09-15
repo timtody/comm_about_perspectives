@@ -246,7 +246,7 @@ def main(args: argparse.Namespace):
     dataset = CifarDataset(f"CIFAR{args.n_classes}", path=args.owd + "/data")
     X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
     results = []
-    for path in glob.glob(args.owd + "/" + args.weights_path + "/*"):
+    for path in glob.glob(args.weights_path + "/*"):
         params = stem_to_params(path_to_stem(path))
         df = gather_results(X, y, sizes, args.train_steps, args.seeds, path, args.use_gpu)
         df["Run"] = map_params_to_name(params)
