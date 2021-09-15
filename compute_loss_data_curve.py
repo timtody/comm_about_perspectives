@@ -160,7 +160,7 @@ def get_dev(rank, use_gpu=True, ngpus=1):
     )
 
 
-def load_encoder(path, rank, use_gpu, agent="A"):
+def load_encoder(path, rank, use_gpu, exp_step, agent="A"):
     dev = (
         torch.device("cuda")
         if torch.cuda.is_available() and use_gpu
@@ -169,7 +169,7 @@ def load_encoder(path, rank, use_gpu, agent="A"):
     cifar_ae = CifarAutoEncoder()
     cifar_ae.load_state_dict(
         torch.load(
-            os.path.join(path, "params", "step_49999", f"rank_{rank}", f"{agent}.pt"),
+            os.path.join(path, "params", f"step_{exp_step}", f"rank_{rank}", f"{agent}.pt"),
             map_location=dev,
         )
     )
@@ -184,6 +184,7 @@ def compute_curve(
     train_steps: int,
     path: str,
     use_gpu: bool,
+    exp_step: int,
     rank: int,
     queue: mp.Queue,
 ) -> None:
@@ -192,7 +193,7 @@ def compute_curve(
     data = []
     dev = get_dev(rank)
     for agent in ["A", "B", "C"]:
-        ae = load_encoder(path, rank, use_gpu, agent)
+        ae = load_encoder(path, rank, use_gpu, exp_step, agent)
         for size in sizes:
             print("Rank", rank, "working on size", size, "and agent", agent, ".")
             indices = np.random.randint(len(y), size=int(size))
@@ -223,12 +224,15 @@ def gather_results(
     seeds: int,
     weights_path: str,
     use_gpu: bool,
+    exp_step: int,
 ) -> pd.DataFrame:
     result_q = mp.Queue()
     processes = []
     for rank in range(seeds):
         p = mp.Process(
-            target=partial(compute_curve, X, y, sizes, train_steps, weights_path, use_gpu),
+            target=partial(
+                compute_curve, X, y, sizes, train_steps, weights_path, use_gpu, exp_step
+            ),
             args=(rank, result_q),
         )
         p.start()
@@ -252,7 +256,9 @@ def main(args: argparse.Namespace):
     results = []
     for path in glob.glob(args.weights_path + "/*"):
         params = stem_to_params(path_to_stem(path))
-        df = gather_results(X, y, sizes, args.train_steps, args.seeds, path, args.use_gpu)
+        df = gather_results(
+            X, y, sizes, args.train_steps, args.seeds, path, args.use_gpu, args.exp_step
+        )
         df["Run"] = map_params_to_name(params)
         results.append(df)
     df = pd.concat(results)
@@ -275,4 +281,5 @@ if __name__ == "__main__":
     parser.add_argument("--weights_path", type=str, required=True)
     parser.add_argument("--only_plot", action="store_true", dest="only_plot")
     parser.add_argument("--ngpus", type=int, default=1)
+    parser.add_argument("--exp_step", type=int, default=49999)
     main(parser.parse_args())
