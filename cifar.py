@@ -76,7 +76,6 @@ class CifarDataset:
         )
 
     def sample_all_digits_once(self) -> torch.Tensor:
-        # TODO: Implement
         raise NotImplementedError
 
     def sample(self, bsize: int, eval: bool = False) -> torch.Tensor:

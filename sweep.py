@@ -43,7 +43,7 @@ class Config(NamedTuple):
     nsamples: int = 1
 
     # nets
-    latent_dim: int = 30
+    latent_dim: int = 500
     lr: float = 0.001
     bsize: int = 4096
 

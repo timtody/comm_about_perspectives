@@ -42,6 +42,22 @@ class CifarAutoEncoder(_AutoEncoder, nn.Module):
         self.name = name
 
 
+def cifar_encoder():
+    return nn.Sequential(
+        nn.Conv2d(1, 16, 4),
+        nn.ELU(),
+        nn.Conv2d(16, 16, 4),
+    )
+
+
+def cifar_decoder():
+    return nn.Sequential(
+        nn.ConvTranspose2d(16, 16, 4),
+        nn.ELU(),
+        nn.ConvTranspose2d(16, 1, 4),
+    )
+
+
 def create_run_folder(func):
     # TODO: make this compatible with JZ by allowing to write to $SCRATCH
     def wrapper(args):
@@ -92,22 +108,6 @@ def map_params_to_name(params: dict):
         return "AE"
     if params["eta_lsa"] == "0.1":
         return "AE+MTM_pure"
-
-
-def cifar_encoder():
-    return nn.Sequential(
-        nn.Conv2d(1, 16, 4),
-        nn.ELU(),
-        nn.Conv2d(16, 16, 4),
-    )
-
-
-def cifar_decoder():
-    return nn.Sequential(
-        nn.ConvTranspose2d(16, 16, 4),
-        nn.ELU(),
-        nn.ConvTranspose2d(16, 1, 4),
-    )
 
 
 def transform(x) -> torch.Tensor:
@@ -203,6 +203,8 @@ def compute_curve(
             latent_size = reduce(
                 lambda a, b: a * b, ae.encode(transform(X_train).to(dev)).size()[1:]
             )
+            print(latent_size)
+            exit(1)
             mlp = MLP(latent_size, 10).to(dev)
             opt = optim.Adam(mlp.parameters())
             mlp = train_fn(

@@ -46,7 +46,6 @@ class Config(NamedTuple):
     samedigit: bool = False
 
     # nets
-    latent_dim: int = 30
     lr: float = 0.001
     bsize: int = 32
 
