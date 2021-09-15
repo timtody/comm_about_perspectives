@@ -43,11 +43,13 @@ class CifarAutoEncoder(_AutoEncoder, nn.Module):
 
 
 def create_run_folder(func):
+    # TODO: make this compatible with JZ by allowing to write to $SCRATCH
     def wrapper(args):
         args.owd = os.getcwd()
         path = create_timestap_path()
         os.makedirs(path, exist_ok=True)
         os.chdir(path)
+        print("Starting experiment at path:", path)
         with open("cfg.json", "w") as f:
             sorted_args = dict(sorted(vars(args).items(), key=lambda item: item[0]))
             json.dump(sorted_args, f, indent=2)
@@ -70,8 +72,6 @@ def plot_curves(df, metric):
         markers=True,
         dashes=False,
     )
-    # handles, labels = ax.get_legend_handles_labels()
-    # ax.legend(handles=handles[1:], labels=labels[1:])
     if metric == "Loss":
         plt.yscale("log")
     plt.xscale("log")
