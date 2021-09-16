@@ -39,7 +39,7 @@ class LinearClassifier(nn.Module):
         self.fc = nn.Linear(input_dim, output_dim)
 
     def forward(self, x):
-        return self.fc(x)
+        return self.fc(x.flatten(start_dim=1))
 
 
 class CifarAutoEncoder(_AutoEncoder, nn.Module):
