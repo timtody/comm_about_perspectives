@@ -180,11 +180,15 @@ if __name__ == "__main__":
     noise_levels = [0.67]
     n_agents = [3]
     latent_sizes = [64, 128, 256, 512, 1024, 2048, 10000]
+    same_digit = [True, False]
     fixed_sweep = []
     for params in param_list:
         for latent_size in latent_sizes:
-            new_params = copy(params)
-            fixed_sweep.append(new_params)
+            for sd in same_digit:
+                new_params = copy(params)
+                new_params.append(("latent_dim", latent_size))
+                new_params.append(("samedigit", sd))
+                fixed_sweep.append(new_params)
 
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     for vars in fixed_sweep:
