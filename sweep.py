@@ -53,7 +53,7 @@ class Config(NamedTuple):
     affine: bool = False
 
     # channel noise
-    sigma: float = 0.25
+    sigma: float = 0.67
 
     # hyperparameters
     eta_ae: float = 1.0
@@ -179,14 +179,12 @@ if __name__ == "__main__":
 
     noise_levels = [0.67]
     n_agents = [3]
+    latent_sizes = [32, 64, 128, 256, 512, 1024, 2048, 10000]
     fixed_sweep = []
     for params in param_list:
-        for nl in noise_levels:
-            for nag in n_agents:
-                new_params = copy(params)
-                new_params.append(("sigma", nl))
-                new_params.append(("nagents", nag))
-                fixed_sweep.append(new_params)
+        for latent_size in latent_sizes:
+            new_params = copy(params)
+            fixed_sweep.append(new_params)
 
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     for vars in fixed_sweep:
@@ -204,7 +202,7 @@ if __name__ == "__main__":
                 print("[SWEEPER]: Starting SLURM job:", jobname)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
             # this is required by the IDRIS administration to keep the throughput of jobs lower
-            time.sleep(2)
+            time.sleep(1)
         else:
             raise InvalidConfigurationException("[SWEEPER]: Invalid mp method name.")
 
