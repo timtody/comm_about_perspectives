@@ -179,7 +179,7 @@ if __name__ == "__main__":
 
     noise_levels = [0.67]
     n_agents = [3]
-    latent_sizes = [32, 64, 128, 256, 512, 1024, 2048, 10000]
+    latent_sizes = [64, 128, 256, 512, 1024, 2048, 10000]
     fixed_sweep = []
     for params in param_list:
         for latent_size in latent_sizes:
