@@ -28,6 +28,7 @@ class Config(NamedTuple):
     ngpus: int = 1
     mp_method: str = "slurm"
     log_every: int = 50  # how often we write to readers / tb
+    topk: int = 1
 
     nodetach: bool = False
 
