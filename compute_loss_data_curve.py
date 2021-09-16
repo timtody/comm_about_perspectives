@@ -33,6 +33,15 @@ class MLP(nn.Module):
         return x
 
 
+class LinearClassifier(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(LinearClassifier, self).__init__()
+        self.fc = nn.Linear(input_dim, output_dim)
+
+    def forward(self, x):
+        return self.fc(x)
+
+
 class CifarAutoEncoder(_AutoEncoder, nn.Module):
     def __init__(self, lr=0.001, name=None):
         super().__init__()
@@ -120,7 +129,7 @@ def transform(x) -> torch.Tensor:
 
 
 def train_fn(
-    mlp: MLP, batch, opt, train_steps, dataset_size, dev, repr_fn=lambda x: x
+    classifier: MLP, batch, opt, train_steps, dataset_size, dev, repr_fn=lambda x: x
 ) -> MLP:
     X, y = map(lambda x: x.to(dev), batch)
     dataset_blowup_factor = int(dataset_size * 0.8 / len(X))
@@ -130,18 +139,18 @@ def train_fn(
         y = torch.cat(dataset_blowup_factor * [y], dim=0)
     for _ in range(train_steps):
         indices = np.random.randint(len(X), size=1024)
-        predictions = mlp(repr_fn(transform(X[indices])))
+        predictions = classifier(repr_fn(transform(X[indices])))
         error = f.cross_entropy(predictions, y[indices].long())
         opt.zero_grad()
         error.backward()
         opt.step()
-    return mlp
+    return classifier
 
 
-def eval_fn(mlp, batch, dev, repr_fn=lambda x: x) -> tuple:
+def eval_fn(classifier, batch, dev, repr_fn=lambda x: x) -> tuple:
     X, y = map(lambda x: x.to(dev), batch)
     with torch.no_grad():
-        prediction = mlp(repr_fn(transform(X)))
+        prediction = classifier(repr_fn(transform(X)))
         loss = f.cross_entropy(prediction, y.long())
         accuracy = (prediction.argmax(dim=1) == y).float().mean()
     return loss.item(), accuracy.item()
@@ -185,6 +194,7 @@ def compute_curve(
     path: str,
     use_gpu: bool,
     exp_step: int,
+    classifier: str,
     rank: int,
     queue: mp.Queue,
 ) -> None:
@@ -203,14 +213,19 @@ def compute_curve(
             latent_size = reduce(
                 lambda a, b: a * b, ae.encode(transform(X_train).to(dev)).size()[1:]
             )
-            print(latent_size)
-            exit(1)
-            mlp = MLP(latent_size, 10).to(dev)
-            opt = optim.Adam(mlp.parameters())
-            mlp = train_fn(
-                mlp, (X_train, y_train), opt, train_steps, sizes[-1], dev, repr_fn=ae.encode
+            if classifier == "linear":
+                cls = LinearClassifier(latent_size, 10).to(dev)
+            elif classifier == "nonlinear":
+                cls = MLP(latent_size, 10).to(dev)
+            else:
+                print("Using nonlinear classifier")
+                cls = MLP(latent_size, 10).to(dev)
+
+            opt = optim.Adam(cls.parameters())
+            cls = train_fn(
+                cls, (X_train, y_train), opt, train_steps, sizes[-1], dev, repr_fn=ae.encode
             )
-            loss, acc = eval_fn(mlp, (X_test, y_test), dev, repr_fn=ae.encode)
+            loss, acc = eval_fn(cls, (X_test, y_test), dev, repr_fn=ae.encode)
             data.append((rank, size, agent, "Loss", loss))
             data.append((rank, size, agent, "Accuracy", acc))
 
@@ -227,13 +242,22 @@ def gather_results(
     weights_path: str,
     use_gpu: bool,
     exp_step: int,
+    classifier: str,
 ) -> pd.DataFrame:
     result_q = mp.Queue()
     processes = []
     for rank in range(seeds):
         p = mp.Process(
             target=partial(
-                compute_curve, X, y, sizes, train_steps, weights_path, use_gpu, exp_step
+                compute_curve,
+                X,
+                y,
+                sizes,
+                train_steps,
+                weights_path,
+                use_gpu,
+                exp_step,
+                classifier,
             ),
             args=(rank, result_q),
         )
@@ -259,7 +283,15 @@ def main(args: argparse.Namespace):
     for path in glob.glob(args.weights_path + "/*"):
         params = stem_to_params(path_to_stem(path))
         df = gather_results(
-            X, y, sizes, args.train_steps, args.seeds, path, args.use_gpu, args.exp_step
+            X,
+            y,
+            sizes,
+            args.train_steps,
+            args.seeds,
+            path,
+            args.use_gpu,
+            args.exp_step,
+            args.classifier,
         )
         df["Run"] = map_params_to_name(params)
         results.append(df)
@@ -284,4 +316,7 @@ if __name__ == "__main__":
     parser.add_argument("--only_plot", action="store_true", dest="only_plot")
     parser.add_argument("--ngpus", type=int, default=1)
     parser.add_argument("--exp_step", type=int, default=49999)
+    parser.add_argument(
+        "--classifier", type=str, choices=("linear", "nonlinear"), default="nonlinear"
+    )
     main(parser.parse_args())
