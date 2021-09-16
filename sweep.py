@@ -138,12 +138,12 @@ if __name__ == "__main__":
 
     processes = []
 
-    sweeper = Sweeper(
-        sample_vars=hparams[:-1],
-        grid_vars=hparams[-1:],
-        nsamples=args.nsamples,
-        gridsteps=args.gridsteps,
-    )
+    # sweeper = Sweeper(
+    #     sample_vars=hparams[:-1],
+    #     grid_vars=hparams[-1:],
+    #     nsamples=args.nsamples,
+    #     gridsteps=args.gridsteps,
+    # )
     param_list = [
         [
             ("eta_ae", 0.0),
@@ -177,6 +177,7 @@ if __name__ == "__main__":
         ],
     ]
 
+    hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "latent_dim", "samedigit"]
     noise_levels = [0.67]
     n_agents = [3]
     latent_sizes = [64, 128, 256, 512, 1024, 2048, 10000]
