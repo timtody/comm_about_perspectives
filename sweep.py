@@ -207,7 +207,7 @@ if __name__ == "__main__":
                 print("[SWEEPER]: Starting SLURM job:", jobname)
                 run_single_from_sweep_slurm(args, runner_args, path, rank, jobname)
             # this is required by the IDRIS administration to keep the throughput of jobs lower
-            time.sleep(1)
+            time.sleep(0)
         else:
             raise InvalidConfigurationException("[SWEEPER]: Invalid mp method name.")
 
