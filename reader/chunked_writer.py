@@ -122,7 +122,8 @@ class TidyReader:
     def read(self, tag: str = "default", columns: List[str] = None) -> DataFrame:
         return self._read(self.path, tag, columns)
 
-    def _read(self, path: str, tag: str, columns: List[str]) -> pd.DataFrame:
+    @staticmethod
+    def _read(path: str, tag: str, columns: List[str]) -> pd.DataFrame:
         """Reads the data from :path:. This method currently tries to sort
         the ist of posix paths by using the timestamp in the name. This is currently
         buggy but not required for functionality.

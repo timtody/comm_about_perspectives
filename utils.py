@@ -5,12 +5,6 @@ from typing import List
 import pandas as pd
 
 
-def prepare_plot():
-    plt.clf()
-    set_tex_fonts(11, 8, 6)
-    set_palette()
-
-
 def series_to_mean(df, threshold=24000, add_params=()):
     df = df[df["Step"] > threshold]
     groups = df.groupby(
@@ -68,6 +62,9 @@ def load_data(path, tag, keys, stop_after=None):
     dfs = []
     i = 0
     for path in paths:
+        # TODO: bette to check if path has the correct form
+        if "DS_Store" in str(path):
+            continue
         i += 1
         df, params = load_df_and_params(path, tag, keys)
         for param, value in params.items():
@@ -108,3 +105,21 @@ def plot_over(set_params, by=None, ax=None, title="Title", path=""):
     ]
     df["Title"] = title
     return df
+
+
+def map_params_to_name(params: dict):
+    if params["eta_msa"] == "1.0":
+        # print("mapping", params, "to DTI.")
+        return "DTI"
+    if params["eta_msa"] == "0.74":
+        # print("mapping", params, "to ALL.")
+        return "All"
+    if params["eta_msa"] == "0.95":
+        # print("mapping", params, "to AE+MTM.")
+        return "AE+MTM"
+    if params["eta_ae"] == "1.0" and params["eta_lsa"] == "0.0":
+        # print("mapping", params, "to AE.")
+        return "AE"
+    if params["eta_ae"] == "1.0" and params["eta_lsa"] == "0.1":
+        # print("mapping", params, "to AE.")
+        return "AE+MTM-pure"

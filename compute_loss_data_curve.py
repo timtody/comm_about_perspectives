@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import multiprocessing as mp
 import glob
 from functools import partial
-from utils import stem_to_params, path_to_stem
+from utils import stem_to_params, path_to_stem, map_params_to_name
 from functions import create_timestap_path
 
 
@@ -104,19 +104,6 @@ def plot_curves(df, metric):
     plt.xlabel("Dataset size")
     plt.savefig(f"reprieve_curves_{metric}.pdf")
     plt.clf()
-
-
-def map_params_to_name(params: dict):
-    if params["eta_msa"] == "1.0":
-        return "DTI"
-    if params["eta_msa"] == "0.74":
-        return "All"
-    if params["eta_msa"] == "0.95":
-        return "AE+MTM"
-    if params["eta_ae"] == "1.0" and params["eta_lsa"] == "0.1":
-        return "AE"
-    if params["eta_lsa"] == "0.1":
-        return "AE+MTM_pure"
 
 
 def transform(x) -> torch.Tensor:
