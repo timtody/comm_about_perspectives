@@ -5,7 +5,7 @@ from pandas import DataFrame
 from reader import TidyReader
 import matplotlib.pyplot as plt
 import seaborn as sns
-from plotting.plotting_helpers import set_size, set_tex_fonts, set_palette
+from plotting.plotting_helpers import get_size, set_tex_fonts, set_palette
 from utils import stem_to_params
 
 
@@ -49,7 +49,7 @@ def main(path: str):
     df = pd.concat(dfs)
     # df = df.groupby("Experiment").agg(["mean", "std"]).round(4)
 
-    fig_w, fig_h = set_size("neurips")
+    fig_w, fig_h = get_size("neurips")
     fig, ax = plt.subplots(constrained_layout=True, figsize=(fig_w, fig_h))
     # ax.errorbar(
     #     df.Acc["mean"], y=df.Loss["mean"], yerr=df.Loss["std"], xerr=df.Acc["std"], fmt="o"

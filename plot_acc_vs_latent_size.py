@@ -6,6 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from utils import load_data, map_params_to_name
 from plotting_functions import prepare_plot
+from plotting.plotting_helpers import get_size
 
 
 def series_to_dict(series) -> dict:
@@ -33,7 +34,6 @@ def filter_unwanted_rows(df):
 
 
 def main(args):
-    print(args.results_path)
     df = load_data(
         args.results_path,
         "pred_from_latent",
@@ -52,22 +52,49 @@ def main(args):
     df = df[df.Run != "AE+MTM-pure"]
     df["Latent size"] = pd.to_numeric(df["latent_dim"])
     df[r"Validation accuracy (\%)"] = df["Value"]
+    df["Perspective"] = df["samedigit"].map({"True": "With", "False": "Without"})
 
     prepare_plot()
-    sns.relplot(
-        data=df,
+    fig_w, fig_h = get_size("neurips", subplots=(2, 2), height_multiplier=0.7)
+    fig = plt.figure(constrained_layout=True, figsize=(fig_w, fig_h))
+    gs = fig.add_gridspec(1, 2)
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[0, 1])
+
+    sns.lineplot(
+        ax=ax1,
+        data=df[df.samedigit == "False"],
         x="Latent size",
         y=r"Validation accuracy (\%)",
         hue="Run",
         style="Run",
         markers=True,
         dashes=False,
-        col="samedigit",
-        kind="line",
+        legend=False,
     )
-    plt.suptitle("Validation accuracy against latent size")
-    plt.tight_layout()
-    plt.show()
+    sns.despine(ax=ax1)
+
+    ax1.set_title("With perspective")
+
+    sns.lineplot(
+        ax=ax2,
+        data=df[df.samedigit == "True"],
+        x="Latent size",
+        y=r"Validation accuracy (\%)",
+        hue="Run",
+        style="Run",
+        markers=True,
+        dashes=False,
+    )
+    ax2.set_title("Without perspective")
+    sns.despine(ax=ax2)
+    ax2.set_ylabel("")
+
+    fig.savefig(
+        "plots/acc_vs_latent_size.pdf",
+        format="pdf",
+        bbox_inches="tight",
+    )
 
 
 if __name__ == "__main__":

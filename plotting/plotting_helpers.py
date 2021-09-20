@@ -2,7 +2,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def set_size(width, fraction=0.97, subplots=(1, 1), height_multiplier=1):
+def get_fig(subplots, size="neurips"):
+    fig_w, fig_h = get_size(size, subplots=subplots, height_multiplier=1.4)
+    fig = plt.figure(constrained_layout=True, figsize=(fig_w, fig_h))
+    return fig
+
+
+def get_size(width, fraction=0.97, subplots=(1, 1), height_multiplier=1):
     """Set figure dimensions to avoid scaling in LaTeX.
 
     Parameters

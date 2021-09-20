@@ -7,7 +7,7 @@ import seaborn as sns
 from statannot import add_stat_annotation
 
 from reader.chunked_writer import TidyReader
-from plotting.plotting_helpers import set_size, set_tex_fonts, set_palette
+from plotting.plotting_helpers import get_size, set_tex_fonts, set_palette
 from utils import load_data, series_to_mean, plot_over
 
 EPOCH = 49999
@@ -84,7 +84,7 @@ def gather_runs_by_param_configs(data, parameter_configs):
 
 def prepare_plot():
     plt.clf()
-    set_tex_fonts(11, 8, 6)
+    set_tex_fonts(10, 8, 8)
     set_palette()
 
 
@@ -119,7 +119,7 @@ def set_hatches_on_ax(ax):
 
 
 def get_fig(subplots, size="neurips"):
-    fig_w, fig_h = set_size(size, subplots=subplots, height_multiplier=1.4)
+    fig_w, fig_h = get_size(size, subplots=subplots, height_multiplier=1.4)
     fig = plt.figure(constrained_layout=True, figsize=(fig_w, fig_h))
     return fig
 

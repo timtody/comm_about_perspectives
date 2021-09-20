@@ -7,7 +7,7 @@ import seaborn as sns
 from statannot import add_stat_annotation
 
 from reader.chunked_writer import TidyReader
-from plotting_helpers import set_size, set_tex_fonts, set_palette
+from plotting_helpers import get_size, set_tex_fonts, set_palette
 from utils import load_data, series_to_mean, plot_over
 
 EPOCH = 39999.0
@@ -44,12 +44,16 @@ def clean_latent_data(data, epoch=None):
         & (data["Agent"] != "baseline_1")
         & (data["Agent"] != "baseline_2")
         & (data["Agent"] != "baseline")
-        ]
+    ]
     return data
 
 
 def load_latent_data(path, epoch=None):
-    data = load_data(path, "pred_from_latent", ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"])
+    data = load_data(
+        path,
+        "pred_from_latent",
+        ["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
+    )
     data = clean_latent_data(data, epoch)
     return data
 
@@ -93,7 +97,10 @@ def read_single(path, tag, columns):
 
 def read_single_latent(path):
     reader = TidyReader(os.path.join(path, "data"))
-    df = reader.read(tag="pred_from_latent", columns=["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"])
+    df = reader.read(
+        tag="pred_from_latent",
+        columns=["Epoch", "Rank", "Step", "Value", "Metric", "Type", "Agent"],
+    )
     data = clean_latent_data(df)
     data = data[data["Step"] > 4800]
     return data
@@ -113,7 +120,9 @@ def set_hatches_on_ax(ax):
 
 
 def get_fig(subplots, size="neurips", fraction=0.95, height_multiplier=1.4):
-    fig_w, fig_h = set_size(size, fraction=fraction, subplots=subplots, height_multiplier=height_multiplier)
+    fig_w, fig_h = get_size(
+        size, fraction=fraction, subplots=subplots, height_multiplier=height_multiplier
+    )
     fig = plt.figure(constrained_layout=True, figsize=(fig_w, fig_h))
     return fig
 
@@ -124,13 +133,22 @@ def despine_list(axes_list: list):
 
 
 def _prepare_data_swapacc(path: str, parameter_configs: "list[dict]"):
-    data = load_data(path, "cross_agent_acc", ["Rank", "Step", "Epoch", "Tag", "Swap acc."], stop_after=None)
+    data = load_data(
+        path,
+        "cross_agent_acc",
+        ["Rank", "Step", "Epoch", "Tag", "Swap acc."],
+        stop_after=None,
+    )
     data = data[(data["Tag"] != "Base") & (data["Epoch"] == EPOCH)]
     return gather_runs_by_param_configs(data, parameter_configs)
 
 
 def _prepare_data_agreement(path: str):
-    data = read_single(path, "agreement", ["Rank", "Step", "Step1", "Tag", "Agreement", "Centralised", "Agent"])
+    data = read_single(
+        path,
+        "agreement",
+        ["Rank", "Step", "Step1", "Tag", "Agreement", "Centralised", "Agent"],
+    )
     data = data[data["Tag"] == "MA"]
     # rename MTI to DTI
     data.loc[data["Agent"] == "MTI", "Agent"] = "DTI"
@@ -151,7 +169,9 @@ def _prepare_data_perspective(path: str, parameter_configs, cache=True):
 def _prepare_data_nagents(path: str):
     if path == "decentralised":
         data = plot_over(
-            {"eta_lsa": "0.3", },
+            {
+                "eta_lsa": "0.3",
+            },
             by="nagents",
             path="results/nagents",
         )
@@ -169,7 +189,11 @@ def _prepare_data_nagents(path: str):
 
 
 def _prepare_data_robustness(path: str):
-    data = load_data(path, "default", ["Step", "Rank", "Centralised", "Agent", "Rank1", "Step1", "Tag", "Acc"])
+    data = load_data(
+        path,
+        "default",
+        ["Step", "Rank", "Centralised", "Agent", "Rank1", "Step1", "Tag", "Acc"],
+    )
     data.drop(labels=["Step1", "Rank1"], axis=1, inplace=True)
     data = data[(data["Step"] > 4800) & (data["Agent"] != "Baseline")]
     data = data.groupby(["Agent", "sigma", "Rank"]).mean()
@@ -180,15 +204,16 @@ def plot_swap_acc(ax, path, parameter_configs):
     data = _prepare_data_swapacc(path, parameter_configs)
     data.sort_values(by="Agent", inplace=True)
 
-    sns.barplot(data=data,
-                x="Agent",
-                y="Swap acc.",
-                ax=ax,
-                edgecolor=".2",
-                capsize=0.01,
-                errwidth=1.5,
-                order=["Yes", "No"]
-                )
+    sns.barplot(
+        data=data,
+        x="Agent",
+        y="Swap acc.",
+        ax=ax,
+        edgecolor=".2",
+        capsize=0.01,
+        errwidth=1.5,
+        order=["Yes", "No"],
+    )
     ax.set_xlabel("Communication")
     # add_stat_annotation(ax,
     #
@@ -206,15 +231,16 @@ def plot_swap_acc(ax, path, parameter_configs):
 def plot_agreement(ax, path):
     data = _prepare_data_agreement(path)
     data.sort_values(by="Agent", inplace=True)
-    sns.barplot(data=data,
-                ax=ax,
-                x="Agent",
-                y="Agreement",
-                edgecolor=".2",
-                capsize=0.01,
-                errwidth=1.5,
-                order=["Yes", "No"]
-                )
+    sns.barplot(
+        data=data,
+        ax=ax,
+        x="Agent",
+        y="Agreement",
+        edgecolor=".2",
+        capsize=0.01,
+        errwidth=1.5,
+        order=["Yes", "No"],
+    )
     # add_stat_annotation(ax,
     #                     data=data,
     #                     x="Agent",
@@ -228,9 +254,13 @@ def plot_agreement(ax, path):
 
 
 def _prepare_data_perspective_grid():
-    path_mti = "results/gridsweep/sigma:0.0-eta_ae:0.0-eta_msa:1.0-eta_lsa:0.0-eta_dsa:0.67-"
+    path_mti = (
+        "results/gridsweep/sigma:0.0-eta_ae:0.0-eta_msa:1.0-eta_lsa:0.0-eta_dsa:0.67-"
+    )
     path_ae = "results/gridsweep/sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.0-eta_dsa:0.0-"
-    path_ae_mtm = "results/gridsweep/sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.0-eta_dsa:0.0-"
+    path_ae_mtm = (
+        "results/gridsweep/sigma:0.33-eta_ae:1.0-eta_msa:0.0-eta_lsa:0.0-eta_dsa:0.0-"
+    )
 
     data_mti = read_single_latent(path_mti)
     data_mti["Agent"] = "Comm"
@@ -243,7 +273,9 @@ def _prepare_data_noperspective_grid():
     return _prepare_data_perspective_grid()
 
 
-def plot_perspective(ax, path_persp, path_no_persp, parameter_configs_p, parameter_configs_nop):
+def plot_perspective(
+    ax, path_persp, path_no_persp, parameter_configs_p, parameter_configs_nop
+):
     if path_persp == "results/gridsweep":
         print("Getting data from gridsweep")
         data_perp = _prepare_data_perspective_grid()
@@ -268,32 +300,34 @@ def plot_perspective(ax, path_persp, path_no_persp, parameter_configs_p, paramet
 
     data.sort_values(by="Agent", inplace=True)
 
-    sns.barplot(data=data,
-                x="Perspective",
-                y="Value",
-                hue="Agent",
-                edgecolor=".2",
-                capsize=0.01,
-                errwidth=1.5,
-                ax=ax,
-                # order=["Single", "Multi"]
-                )
+    sns.barplot(
+        data=data,
+        x="Perspective",
+        y="Value",
+        hue="Agent",
+        edgecolor=".2",
+        capsize=0.01,
+        errwidth=1.5,
+        ax=ax,
+        # order=["Single", "Multi"]
+    )
 
     remove_ax_titles(ax)
 
-    add_stat_annotation(ax,
-                        line_height=0.02,
-                        line_offset_to_box=0.04,
-                        data=data,
-                        x="Perspective",
-                        y="Value",
-                        hue="Agent",
-                        test="t-test_welch",
-                        box_pairs=[
-                            (("Yes", "No comm"), ("Yes", "Comm")),
-                            (("No", "No comm"), ("No", "Comm")),
-                        ]
-                        )
+    add_stat_annotation(
+        ax,
+        line_height=0.02,
+        line_offset_to_box=0.04,
+        data=data,
+        x="Perspective",
+        y="Value",
+        hue="Agent",
+        test="t-test_welch",
+        box_pairs=[
+            (("Yes", "No comm"), ("Yes", "Comm")),
+            (("No", "No comm"), ("No", "Comm")),
+        ],
+    )
     change_width_(ax, 0.32)
 
     ax.set_ylabel(r"Accuracy (\%)")
@@ -325,31 +359,32 @@ def plot_nagents(ax, path):
 
 def plot_robustness(ax, path):
     data = _prepare_data_robustness(path)
-    sns.lineplot(data=data,
-                 x="sigma",
-                 y="Acc",
-                 hue="Agent",
-                 ax=ax,
-                 # err_style="bars",
-                 markers=True,
-                 dashes=False,
-                 style="Agent",
-                 # legend=False,
-                 # err_kws=dict(
-                 #     capsize=3,
-                 #     capthick=2,
-                 # ),
-                 )
+    sns.lineplot(
+        data=data,
+        x="sigma",
+        y="Acc",
+        hue="Agent",
+        ax=ax,
+        # err_style="bars",
+        markers=True,
+        dashes=False,
+        style="Agent",
+        # legend=False,
+        # err_kws=dict(
+        #     capsize=3,
+        #     capthick=2,
+        # ),
+    )
 
 
 def _plot_perspective_nagents_robustness(
-        path_perspective: str,
-        path_no_perspective: str,
-        path_nagents: str,
-        path_robustnes: str,
-        plotname: str,
-        parameter_configs_p: "list[dict]",
-        parameter_configs_nop: "list[dict]"
+    path_perspective: str,
+    path_no_perspective: str,
+    path_nagents: str,
+    path_robustnes: str,
+    plotname: str,
+    parameter_configs_p: "list[dict]",
+    parameter_configs_nop: "list[dict]",
 ):
     prepare_plot()
     fig = get_fig((1, 2), size="beamer", height_multiplier=1)
@@ -360,7 +395,13 @@ def _plot_perspective_nagents_robustness(
     # ax3 = fig.add_subplot(gs[1, 1])
     axes = [ax1, ax2]
 
-    plot_perspective(ax1, path_perspective, path_no_perspective, parameter_configs_p, parameter_configs_nop)
+    plot_perspective(
+        ax1,
+        path_perspective,
+        path_no_perspective,
+        parameter_configs_p,
+        parameter_configs_nop,
+    )
     plot_nagents(ax2, path_nagents)
     # plot_robustness(ax3, path_robustnes)
     despine_list(axes)
@@ -374,10 +415,10 @@ def _plot_perspective_nagents_robustness(
 
 
 def _plot_swapacc_and_agreement(
-        path_agreement: str,
-        path_swapacc: str,
-        plotname: str,
-        parameter_configs: list = None,
+    path_agreement: str,
+    path_swapacc: str,
+    plotname: str,
+    parameter_configs: list = None,
 ):
     prepare_plot()
     fig = get_fig((1, 1), size="beamer", fraction=0.618, height_multiplier=1)
@@ -404,7 +445,9 @@ def _plot_swapacc_and_agreement(
 
 def plot_swap_and_agreement():
     agreement_data_centralised = "results/convergence/2021-05-27/15-36-01"
-    swapacc_data_centralised = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45"
+    swapacc_data_centralised = (
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45"
+    )
 
     _plot_swapacc_and_agreement(
         agreement_data_centralised,
@@ -414,7 +457,7 @@ def plot_swap_and_agreement():
             {"No": {"eta_ae": "1"}},
             {"Yes": {"eta_msa": "1"}},
             # {"AE+MTM": {"eta_msa": "0.74", "eta_ae": "0.53"}}
-        ]
+        ],
     )
 
     agreement_data_decentralised = "results/convergence/2021-05-27/15-18-45"
@@ -426,18 +469,33 @@ def plot_swap_and_agreement():
         "decentralised_beamer",
         parameter_configs=[
             {"No": {"eta_ae": "1.0", "eta_lsa": "0.0", "eta_msa": "0.0", "eta_dsa": "0.0"}},
-            {"Yes": {"eta_ae": "0.0", "eta_lsa": "0.0", "eta_msa": "1.0", "eta_dsa": "0.0"}},
+            {
+                "Yes": {
+                    "eta_ae": "0.0",
+                    "eta_lsa": "0.0",
+                    "eta_msa": "1.0",
+                    "eta_dsa": "0.0",
+                }
+            },
             # {"AE+MTM": {"eta_ae": "0.67", "eta_lsa": "0.33", "eta_msa": "0.0", "eta_dsa": "0.0", "sigma": "0.0"}}
-        ]
+        ],
     )
 
 
 def plot_perspective_nagents_robustness():
-    path_perspective_centralised = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45"
-    path_no_perspective_centralised = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-21/13-39-24/"
+    path_perspective_centralised = (
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-20/21-26-45"
+    )
+    path_no_perspective_centralised = (
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-21/13-39-24/"
+    )
 
-    path_nagents_centralised = "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-23/22-13-46"
-    path_robustnes_centralised = "results/jeanzay/results/sweeps/robustness/2021-05-27/11-04-11"
+    path_nagents_centralised = (
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-23/22-13-46"
+    )
+    path_robustnes_centralised = (
+        "results/jeanzay/results/sweeps/robustness/2021-05-27/11-04-11"
+    )
 
     _plot_perspective_nagents_robustness(
         path_perspective_centralised,
@@ -454,13 +512,15 @@ def plot_perspective_nagents_robustness():
             {"No comm": {"eta_ae": "1.0", "sigma": "0.67"}},
             {"Comm": {"eta_msa": "1.0", "sigma": "0.67"}},
             # {"AE+MTM": {"eta_lsa": "0.14", "eta_ae": "0.81", "sigma": "1.0"}}
-        ]
+        ],
     )
 
     path_perspective_decentralised = "results/gridsweep"
     path_no_perspective_decentralised = "results/gridsweep"
     path_nagents_decentralised = "decentralised"
-    path_robustnes_decentralised = "results/jeanzay/results/sweeps/robustness/2021-05-27/11-35-24"
+    path_robustnes_decentralised = (
+        "results/jeanzay/results/sweeps/robustness/2021-05-27/11-35-24"
+    )
 
     _plot_perspective_nagents_robustness(
         path_perspective_decentralised,
