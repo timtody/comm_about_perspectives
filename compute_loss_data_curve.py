@@ -285,6 +285,7 @@ def main(args: argparse.Namespace):
     df = pd.concat(results)
     df.to_csv("loss_acc_data.csv")
     df = df[df.Run != "All"]
+    df = df[df.Run != "AE+MTM-pure"]
     plot_curves(df, "Loss")
     plot_curves(df, "Accuracy")
 
