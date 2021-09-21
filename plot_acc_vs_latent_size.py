@@ -25,7 +25,7 @@ def add_run_column(df):
 
 def filter_unwanted_rows(df):
     df = df[
-        (df.Epoch == 9999)
+        (df.Epoch == 49999)
         & (df.Metric == "Test accuracy")
         & (df.Agent != "baseline_2")
         & (df.Agent != "baseline")
@@ -34,6 +34,7 @@ def filter_unwanted_rows(df):
 
 
 def main(args):
+    print(args.results_path)
     df = load_data(
         args.results_path,
         "pred_from_latent",
@@ -43,7 +44,7 @@ def main(args):
     # all but Step and Value
     grouping_indices = list(df.columns[(df.columns != "Step") & (df.columns != "Value")])
     # filter out all but last steps, then groupby run and compute mean
-    df = df[df.Step >= 20000].groupby(grouping_indices, as_index=False).mean()
+    df = df[df.Step >= 4000].groupby(grouping_indices, as_index=False).mean()
     # add run column and remove explicit hparams
     df = df.apply(lambda x: add_run_column(x), axis=1).drop(
         ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "Step"], axis=1
@@ -91,7 +92,7 @@ def main(args):
     ax2.set_ylabel("")
 
     fig.savefig(
-        "plots/acc_vs_latent_size.pdf",
+        f"plots/acc_vs_latent_size_{args.name}.pdf",
         format="pdf",
         bbox_inches="tight",
     )
@@ -99,5 +100,6 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--results_path", required=True, type=str)
+    parser.add_argument("--path", required=True, type=str, dest="results_path")
+    parser.add_argument("--name", default="unnamed", type=str)
     main(parser.parse_args())
