@@ -63,7 +63,7 @@ def evaluate_experiment(
     for path_dti in glob.glob(f"{path_dti}/*"):
         for i in range(2):
             ae = AutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=49)
-            repres = ae.encode(data_x)
+            repres = ae.encode(data_x).detach()
             results = evaluate_representations(
                 repres, data_y, 10, (30,), args, "Random features"
             )
@@ -75,7 +75,7 @@ def evaluate_experiment(
             ae.load_state_dict(
                 torch.load(path_dti + ("/baseline.pt" if i == 0 else "/baseline_2.pt"))
             )
-            repres = ae.encode(data_x)
+            repres = ae.encode(data_x).detach()
             results = evaluate_representations(repres, data_y, 10, (30,), args, "AE")
             results["Agent"] = i
             result_df_container.append(results)
@@ -83,7 +83,7 @@ def evaluate_experiment(
         for i in range(3):
             ae = AutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=49)
             ae.load_state_dict(torch.load(path_dti + f"/{string.ascii_uppercase[i]}.pt"))
-            repres = ae.encode(data_x)
+            repres = ae.encode(data_x).detach()
             results = evaluate_representations(repres, data_y, 10, (30,), args, "DTI")
             results["Agent"] = i
             result_df_container.append(results)
@@ -92,7 +92,7 @@ def evaluate_experiment(
         for i in range(3):
             ae = AutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=49)
             ae.load_state_dict(torch.load(path_mtm + f"/{string.ascii_uppercase[i]}.pt"))
-            repres = ae.encode(data_x)
+            repres = ae.encode(data_x).detach()
             results = evaluate_representations(repres, data_y, 10, (30,), args, "AE+MTM")
             results["Agent"] = i
             result_df_container.append(results)
