@@ -282,29 +282,28 @@ def plot_perspective(
         print("Getting data from gridsweep")
         data_perp = _prepare_data_perspective_grid()
         data_no_perp = _prepare_data_noperspective_grid()
-
     else:
         print("Getting data NOT from gridsweep")
         data_perp = _prepare_data_perspective(path_persp, parameter_configs_p)
-        data_no_perp = _prepare_data_perspective(path_no_persp, parameter_configs_nop)
+        # data_no_perp = _prepare_data_perspective(path_no_persp, parameter_configs_nop)
         # ax.set_ylim((0.5, 1))
 
     print(data_perp.groupby("Agent").mean())
 
-    data_no_perp["Perspective"] = "No"
+    # data_no_perp["Perspective"] = "No"
 
-    data_no_perp.loc[data_no_perp["Agent"] == "AE+MTM", "Value"] += 0.002
+    # data_no_perp.loc[data_no_perp["Agent"] == "AE+MTM", "Value"] += 0.002
     data_perp["Perspective"] = "Yes"
 
-    data = pd.concat([data_perp, data_no_perp])
-    data.sort_values(by="Agent", inplace=True)
-    print(data.head(100))
+    # data = pd.concat([data_perp, data_no_perp])
+    # data.sort_values(by="Agent", inplace=True)
+    # print(data.head(100))
 
     sns.barplot(
-        data=data,
-        x="Perspective",
+        data=data_perp,
+        x="Agent",
         y="Value",
-        hue="Agent",
+        # hue="Agent",
         edgecolor=".2",
         capsize=0.01,
         errwidth=1.5,
@@ -313,23 +312,18 @@ def plot_perspective(
 
     remove_ax_titles(ax)
 
-    # add_stat_annotation(
-    #     ax,
-    #     line_height=0.02,
-    #     line_offset_to_box=0.04,
-    #     data=data,
-    #     x="Perspective",
-    #     y="Value",
-    #     hue="Agent",
-    #     test="t-test_welch",
-    #     box_pairs=[
-    #         (("Yes", "AE"), ("Yes", "DTI")),
-    #         (("Yes", "AE"), ("Yes", "AE+MTM")),
-    #         (("No", "AE"), ("No", "DTI")),
-    #         (("No", "AE"), ("No", "AE+MTM")),
-    #     ],
-    # )
-    change_width_(ax, 0.22)
+    add_stat_annotation(
+        ax,
+        line_height=0.02,
+        line_offset_to_box=0.04,
+        data=data_perp,
+        x="Agent",
+        y="Value",
+        # hue="Agent",
+        test="t-test_welch",
+        box_pairs=[("AE", "DTI"), ("AE", "AE+MTM"), ("AE+MTM", "DTI")],
+    ),
+    change_width_(ax, 0.5)
 
     ax.set_ylabel(r"Accuracy (\%)")
 
@@ -388,13 +382,13 @@ def _plot_perspective_nagents_robustness(
     parameter_configs_nop: "list[dict]",
 ):
     prepare_plot()
-    fig = get_fig((1, 2), size="beamer")
+    fig = get_fig((1, 1), size="beamer")
 
-    gs = fig.add_gridspec(1, 2)
+    gs = fig.add_gridspec(1, 1)
     ax1 = fig.add_subplot(gs[0, 0])
-    ax2 = fig.add_subplot(gs[0, 1])
+    # ax2 = fig.add_subplot(gs[0, 1])
     # ax3 = fig.add_subplot(gs[1, 1])
-    axes = [ax1, ax2]
+    # axes = [ax1, ax2]
 
     plot_perspective(
         ax1,
@@ -403,16 +397,16 @@ def _plot_perspective_nagents_robustness(
         parameter_configs_p,
         parameter_configs_nop,
     )
-    plt.show()
-    return
-    plot_nagents(ax2, path_nagents)
-    # plot_robustness(ax3, path_robustnes)
-    despine_list(axes)
-    # set_hatch(axes)
-    print("Saving plot", plotname)
-    plt.show()
+    sns.despine(ax=ax1)
+    # return
+    # plot_nagents(ax2, path_nagents)
+    # # plot_robustness(ax3, path_robustnes)
+    # despine_list(axes)
+    # # set_hatch(axes)
+    # print("Saving plot", plotname)
+    # plt.show()
     fig.savefig(
-        f"plots/prod/perspective_nagents_{plotname}.pdf",
+        f"plots/prod/cifar_acc.pdf",
         format="pdf",
         bbox_inches="tight",
     )
@@ -500,9 +494,7 @@ def plot_perspective_nagents_robustness():
     path_perspective_centralised = (
         "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00"
     )
-    path_no_perspective_centralised = (
-        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00"
-    )
+    path_no_perspective_centralised = "results/latent_size_sweep"
 
     path_nagents_centralised = (
         "results/jeanzay/results/sweeps/shared_ref_mnist/2021-05-23/22-13-46"

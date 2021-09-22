@@ -96,6 +96,7 @@ def plot_curves(df, metric):
         style="Run",
         markers=True,
         dashes=False,
+        hue_order=["AE", "AE+MTM", "DTI"],
     )
     if metric == "Loss":
         plt.yscale("log")
@@ -261,31 +262,41 @@ def gather_results(
 
 @create_run_folder
 def main(args: argparse.Namespace):
+    print(args)
+    assert (
+        args.weights_path is not None or args.restore_from is not None
+    ), "Either weights or restore path must be defined."
+
     print("Cuda available:", torch.cuda.is_available())
     print("Working on", os.cpu_count(), "cores and", args.seeds, "seeds.")
-    sizes = np.logspace(np.log10(args.min_size), np.log10(args.max_size), num=args.nsizes)
-    dataset = CifarDataset(f"CIFAR{args.n_classes}", path=args.owd + "/data")
-    X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
-    results = []
-    for path in glob.glob(args.weights_path + "/*"):
-        params = stem_to_params(path_to_stem(path))
-        df = gather_results(
-            X,
-            y,
-            sizes,
-            args.train_steps,
-            args.seeds,
-            path,
-            args.use_gpu,
-            args.exp_step,
-            args.classifier,
+    if args.restore_from is None:
+        sizes = np.logspace(
+            np.log10(args.min_size), np.log10(args.max_size), num=args.nsizes
         )
-        df["Run"] = map_params_to_name(params)
-        results.append(df)
-    df = pd.concat(results)
-    df.to_csv("loss_acc_data.csv")
-    df = df[df.Run != "All"]
+        dataset = CifarDataset(f"CIFAR{args.n_classes}", path=args.owd + "/data")
+        X, y = dataset.eval.data.transpose([0, 3, 1, 2]) / 255.0, dataset.eval.targets
+        results = []
+        for path in glob.glob(args.weights_path + "/*"):
+            params = stem_to_params(path_to_stem(path))
+            df = gather_results(
+                X,
+                y,
+                sizes,
+                args.train_steps,
+                args.seeds,
+                path,
+                args.use_gpu,
+                args.exp_step,
+                args.classifier,
+            )
+            df["Run"] = map_params_to_name(params)
+            results.append(df)
+        df = pd.concat(results)
+        df.to_csv("loss_acc_data.csv")
+    else:
+        df = pd.read_csv(args.owd + "/" + args.restore_from)
     df = df[df.Run != "AE+MTM-pure"]
+    df["Run"].map({"DTI-pure": "AE+MTM", "AE+MTM": "DTI", "AE": "AE"})
     plot_curves(df, "Loss")
     plot_curves(df, "Accuracy")
 
@@ -300,11 +311,13 @@ if __name__ == "__main__":
     parser.add_argument("--train_steps", type=int, default=int(1e5))
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
     parser.add_argument("--no_gpu", action="store_false", dest="use_gpu")
-    parser.add_argument("--weights_path", type=str, required=True)
-    parser.add_argument("--only_plot", action="store_true", dest="only_plot")
+    parser.add_argument("--weights_path", type=str, required=False)
+    parser.add_argument("--only_plot", action="store_true", dest="o nly_plot")
     parser.add_argument("--ngpus", type=int, default=1)
     parser.add_argument("--exp_step", type=int, default=49999)
     parser.add_argument(
         "--classifier", type=str, choices=("linear", "nonlinear"), default="nonlinear"
     )
+    parser.add_argument("--restore_from", type=str, default=None)
+    parser.add_argument("--name", type=str, default="unnamed")
     main(parser.parse_args())

@@ -14,6 +14,8 @@ import time
 import torch
 import glob
 import string
+from utils import remove_legend_titles
+from plotting_functions import prepare_plot, get_size
 
 
 def _closest_valid_ns(df, ns):
@@ -101,8 +103,32 @@ def evaluate_experiment(
         return results
 
 
+def plot_external(ax):
+    results = get_results()
+    results = results[results.name != "Random features"]
+    sns.lineplot(
+        data=results,
+        ax=ax,
+        x="samples",
+        y="val_loss",
+        hue="name",
+        legend="brief",
+        style="name",
+        markers=True,
+        dashes=False,
+        hue_order=["AE", "AE+MTM", "DTI"],
+    )
+    ax.set_yscale("log")
+    ax.set_xscale("log")
+    ax.set_ylabel("Validation loss")
+    ax.set_xlabel("Dataset size")
+
+
 def plot_curves(results, ns, path):
-    sns.set_palette(sns.color_palette("Set1"))
+    prepare_plot()
+    fig_w, fig_h = get_size("neurips")
+    fig = plt.figure(constrained_layout=True, figsize=(fig_w, fig_h))
+    results = results[results.name != "Random features"]
     ax = sns.lineplot(
         data=results,
         x="samples",
@@ -112,9 +138,10 @@ def plot_curves(results, ns, path):
         style="name",
         markers=True,
         dashes=False,
+        hue_order=["AE", "AE+MTM", "DTI"],
     )
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles=handles[1:], labels=labels[1:])
+    sns.despine(ax=ax)
+    remove_legend_titles(ax)
     plt.yscale("log")
     plt.xscale("log")
     plt.ylabel("Validation loss")
@@ -127,32 +154,35 @@ def plot_curves(results, ns, path):
     # plt.hlines(0.2, 10, 10000, linestyles="dashed")
     # plt.hlines(1, 10, 10000, linestyles="dashed")
 
-    plt.savefig(f"{path}_reprieve_curves_mnist.pdf")
+    fig.savefig(
+        f"{path}_reprieve_curves_mnist.pdf",
+        format="pdf",
+        bbox_inches="tight",
+    )
 
 
-def main(args):
-    ns = [
-        10,
-        100,
-        1000,
-        10000,
-    ]
-    epsilons = [0.2, 1]
-
-    ds = MNISTDataset()
-    data_x, data_y = ds.test_set.data.unsqueeze(1) / 255.0, ds.test_set.targets
+def get_results():
     results_path = "results/full_res.csv"
-
     if not os.path.exists(results_path):
+        ds = MNISTDataset()
+        data_x, data_y = ds.test_set.data.unsqueeze(1) / 255.0, ds.test_set.targets
         results = evaluate_experiment(
             args.dti_path,
             args.mtm_path,
             data_x,
             data_y,
         )
-        results.to_csv("results/full_res.csv")
+        return results
     else:
-        results = pd.read_csv(results_path)
+        return pd.read_csv(results_path)
+
+
+def main(args):
+    ns = [10, 100, 1000, 10000]
+    epsilons = [0.2, 1]
+
+    results = get_results()
+    results.to_csv("results/full_res.csv")
 
     save_path = (
         "results/"
@@ -176,8 +206,8 @@ if __name__ == "__main__":
     parser.add_argument("--train_steps", type=float, default=4e3)
     parser.add_argument("--seeds", type=int, default=5)
     parser.add_argument("--points", type=int, default=10)
-    parser.add_argument("--mtm_path", type=str, required=True)
-    parser.add_argument("--dti_path", type=str, required=True)
+    parser.add_argument("--mtm_path", type=str, required=False)
+    parser.add_argument("--dti_path", type=str, required=False)
     args = parser.parse_args()
 
     start = time.time()

@@ -40,6 +40,31 @@ def extract_rec_and_acc_from_path(path: str, experiment: int) -> DataFrame:
     return df
 
 
+def plot_external(ax, cmap):
+    # cmap = sns.color_palette("rocket_r", as_cmap=True)
+
+    path = "results/ae-dti-sweep"
+    dfs = []
+    for i, path in enumerate(glob.glob(path + "/*")):
+        df = extract_rec_and_acc_from_path(path, i)
+        dfs.append(df)
+    df = pd.concat(dfs)
+
+    df["Acc"] = df["Acc"] * 100
+    sns.regplot(ax=ax, data=df, x="Acc", y="Loss", scatter=False, color="blue")
+    sns.scatterplot(
+        ax=ax,
+        data=df,
+        x="Acc",
+        y="Loss",
+        hue=r"$\eta_{DTI}$",
+        palette=cmap,
+    )
+
+    ax.set_ylabel("Mean squared reconstruction error")
+    ax.set_xlabel(r"Accuracy (\%)")
+
+
 def main(path: str):
     dfs = []
     for i, path in enumerate(glob.glob(path + "/*")):
@@ -49,22 +74,39 @@ def main(path: str):
     df = pd.concat(dfs)
     # df = df.groupby("Experiment").agg(["mean", "std"]).round(4)
 
+    set_tex_fonts(10, 8, 8)
     fig_w, fig_h = get_size("neurips")
     fig, ax = plt.subplots(constrained_layout=True, figsize=(fig_w, fig_h))
     # ax.errorbar(
     #     df.Acc["mean"], y=df.Loss["mean"], yerr=df.Loss["std"], xerr=df.Acc["std"], fmt="o"
     # )
     # ax.errorbar()
+
+    cmap = sns.color_palette("rocket_r", as_cmap=True)
+    norm = plt.Normalize(0, 1)
+    sm = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+    df["Acc"] = df["Acc"] * 100
     sns.regplot(ax=ax, data=df, x="Acc", y="Loss", scatter=False)
-    sns.scatterplot(ax=ax, data=df, x="Acc", y="Loss", hue=r"$\eta_{DTI}$")
-    plt.ylabel("Reconstruction error")
-    plt.xlabel("Accuracy (%)")
+    ax = sns.scatterplot(
+        ax=ax,
+        data=df,
+        x="Acc",
+        y="Loss",
+        hue=r"$\eta_{DTI}$",
+        palette=cmap,
+    )
+    ax.get_legend().remove()
+    cbar = fig.colorbar(sm)
+    cbar.ax.set_ylabel(r"$\eta_{DTI}$")
+
+    plt.ylabel("Mean squared reconstruction error")
+    plt.xlabel(r"Accuracy (\%)")
     sns.despine(ax=ax)
-    set_tex_fonts(11, 8, 6)
-    set_palette()
-    # plt.show()
+
+    # set_palette()
+    set_tex_fonts(10, 8, 8)
     fig.savefig(
-        f"plots/prod/rec_vs_acc_reg.pdf",
+        f"plots/prod/accuracy_vs_reconstruction.pdf",
         format="pdf",
         bbox_inches="tight",
     )
