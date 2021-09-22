@@ -145,8 +145,8 @@ def main(args):
 
     if not os.path.exists(results_path):
         results = evaluate_experiment(
-            "results/reprieve/step_49999",
-            "results/reprieve/AE+MTM",
+            args.dti_path,
+            args.mtm_path,
             data_x,
             data_y,
         )
