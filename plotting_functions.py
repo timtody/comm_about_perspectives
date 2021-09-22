@@ -8,17 +8,12 @@ from statannot import add_stat_annotation
 
 from reader.chunked_writer import TidyReader
 from plotting.plotting_helpers import get_size, set_tex_fonts, set_palette
-from utils import load_data, series_to_mean, plot_over
+from utils import load_data, series_to_mean, plot_over, remove_legend_titles
 
 EPOCH = 49999
 HPARAMS = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "sigma"]
 
 hatches = itertools.cycle(["/", r"\\", "X"])
-
-
-def remove_ax_titles(ax):
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles=handles, labels=labels, title="")
 
 
 def change_width_(ax, new_value, nclasses=2):
@@ -304,7 +299,7 @@ def plot_perspective(
         ax=ax,
     )
 
-    remove_ax_titles(ax)
+    remove_legend_titles(ax)
 
     add_stat_annotation(
         ax,

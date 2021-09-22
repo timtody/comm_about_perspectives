@@ -4,7 +4,7 @@ import argparse
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from utils import load_data, map_params_to_name
+from utils import load_data, map_params_to_name, remove_legend_titles
 from plotting_functions import prepare_plot
 from plotting.plotting_helpers import get_size
 
@@ -49,7 +49,7 @@ def main(args):
     df = df.apply(lambda x: add_run_column(x), axis=1).drop(
         ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "Step"], axis=1
     )
-    df = df[df.Run != "All"]
+    df = df[df.Run != "DTI-pure"]
     df = df[df.Run != "AE+MTM-pure"]
     df["Latent size"] = pd.to_numeric(df["latent_dim"])
     df[r"Validation accuracy (\%)"] = df["Value"]
@@ -86,10 +86,19 @@ def main(args):
         style="Run",
         markers=True,
         dashes=False,
+        legend="brief",
     )
     ax2.set_title("Without perspective")
     sns.despine(ax=ax2)
     ax2.set_ylabel("")
+
+    # need log scale for latent size
+    ax1.set_xscale("log")
+    ax2.set_xscale("log")
+    remove_legend_titles(ax2)
+
+    # equalize ylims
+    ax2.set_ylim(ax1.get_ylim())
 
     fig.savefig(
         f"plots/acc_vs_latent_size_{args.name}.pdf",

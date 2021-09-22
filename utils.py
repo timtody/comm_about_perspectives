@@ -110,10 +110,10 @@ def plot_over(set_params, by=None, ax=None, title="Title", path=""):
 def map_params_to_name(params: dict):
     if params["eta_msa"] == "1.0":
         # print("mapping", params, "to DTI.")
-        return "DTI"
+        return "DTI-pure"
     if params["eta_msa"] == "0.74":
         # print("mapping", params, "to ALL.")
-        return "All"
+        return "DTI"
     if params["eta_msa"] == "0.95":
         # print("mapping", params, "to AE+MTM.")
         return "AE+MTM"
@@ -121,5 +121,10 @@ def map_params_to_name(params: dict):
         # print("mapping", params, "to AE.")
         return "AE"
     if params["eta_ae"] == "1.0" and params["eta_lsa"] == "0.1":
-        # print("mapping", params, "to AE.")
+        # print("mapping", params, "to AE+MTM pure.")
         return "AE+MTM-pure"
+
+
+def remove_legend_titles(ax):
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles=handles, labels=labels, title="")

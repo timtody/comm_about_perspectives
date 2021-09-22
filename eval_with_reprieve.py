@@ -15,6 +15,7 @@ import torch
 import glob
 import string
 
+
 def _closest_valid_ns(df, ns):
     closest_ns = []
     available_ns = sorted(list(df.samples.unique()))
@@ -54,14 +55,18 @@ def evaluate_representations(
     return results
 
 
-def evaluate_experiment(path_dti: str, path_mtm : str, data_x: Tensor, data_y: Tensor) -> pd.DataFrame:
+def evaluate_experiment(
+    path_dti: str, path_mtm: str, data_x: Tensor, data_y: Tensor
+) -> pd.DataFrame:
     result_df_container = []
 
     for path_dti in glob.glob(f"{path_dti}/*"):
         for i in range(2):
             ae = AutoEncoder(30, False, False, 0.001, "bruh", pre_latent_dim=49)
             repres = ae.encode(data_x)
-            results = evaluate_representations(repres, data_y, 10, (30,), args, "Random features")
+            results = evaluate_representations(
+                repres, data_y, 10, (30,), args, "Random features"
+            )
             results["Agent"] = i
             result_df_container.append(results)
 
@@ -115,14 +120,14 @@ def plot_curves(results, ns, path):
     plt.ylabel("Validation loss")
     plt.xlabel("Dataset size")
 
-    ns = _closest_valid_ns(results, ns)
-    for n in ns:
-        plt.vlines(n, 0, 10, linestyles="dashed")
+    # ns = _closest_valid_ns(results, ns)
+    # for n in ns:
+    #     plt.vlines(n, 0, 10, linestyles="dashed")
 
-    plt.hlines(0.2, 10, 10000, linestyles="dashed")
-    plt.hlines(1, 10, 10000, linestyles="dashed")
+    # plt.hlines(0.2, 10, 10000, linestyles="dashed")
+    # plt.hlines(1, 10, 10000, linestyles="dashed")
 
-    plt.savefig(f"{path}_reprieve_curves.pdf")
+    plt.savefig(f"{path}_reprieve_curves_mnist.pdf")
 
 
 def main(args):
@@ -171,6 +176,8 @@ if __name__ == "__main__":
     parser.add_argument("--train_steps", type=float, default=4e3)
     parser.add_argument("--seeds", type=int, default=5)
     parser.add_argument("--points", type=int, default=10)
+    parser.add_argument("--mtm_path", type=str, required=True)
+    parser.add_argument("--dti_path", type=str, required=True)
     args = parser.parse_args()
 
     start = time.time()
