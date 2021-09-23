@@ -86,7 +86,7 @@ def gather_runs_by_param_configs(data, parameter_configs):
 
 def prepare_plot():
     plt.clf()
-    set_tex_fonts(11, 8, 6)
+    set_tex_fonts(10, 8, 8)
     set_palette()
 
 
@@ -298,6 +298,7 @@ def plot_perspective(
     # data = pd.concat([data_perp, data_no_perp])
     # data.sort_values(by="Agent", inplace=True)
     # print(data.head(100))
+    data_perp["Value"] = data_perp["Value"] * 100
 
     sns.barplot(
         data=data_perp,
@@ -308,9 +309,10 @@ def plot_perspective(
         capsize=0.01,
         errwidth=1.5,
         ax=ax,
+        order=["AE", "AE+MTM", "DTI"],
     )
 
-    remove_ax_titles(ax)
+    # remove_ax_titles(ax)
 
     add_stat_annotation(
         ax,
@@ -321,9 +323,10 @@ def plot_perspective(
         y="Value",
         # hue="Agent",
         test="t-test_welch",
+        order=["AE", "AE+MTM", "DTI"],
         box_pairs=[("AE", "DTI"), ("AE", "AE+MTM"), ("AE+MTM", "DTI")],
     ),
-    change_width_(ax, 0.5)
+    # change_width_(ax, 0.5)
 
     ax.set_ylabel(r"Accuracy (\%)")
 
@@ -382,22 +385,21 @@ def _plot_perspective_nagents_robustness(
     parameter_configs_nop: "list[dict]",
 ):
     prepare_plot()
-    fig = get_fig((1, 1), size="beamer")
+    fig_w, fig_h = get_size("neurips", fraction=0.95)
+    fig, ax = plt.subplots(constrained_layout=True, figsize=(fig_w * 0.5, fig_h))
 
-    gs = fig.add_gridspec(1, 1)
-    ax1 = fig.add_subplot(gs[0, 0])
     # ax2 = fig.add_subplot(gs[0, 1])
     # ax3 = fig.add_subplot(gs[1, 1])
     # axes = [ax1, ax2]
 
     plot_perspective(
-        ax1,
+        ax,
         path_perspective,
         path_no_perspective,
         parameter_configs_p,
         parameter_configs_nop,
     )
-    sns.despine(ax=ax1)
+    sns.despine(ax=ax)
     # return
     # plot_nagents(ax2, path_nagents)
     # # plot_robustness(ax3, path_robustnes)
@@ -549,7 +551,17 @@ def plot_perspective_nagents_robustness():
 
 
 def plot_external(ax):
-    pass
+    plot_perspective(
+        ax,
+        "results/jeanzay/results/sweeps/shared_ref_mnist/2021-08-24/19-16-00",
+        "no-persp-dummy",
+        parameter_configs_p=[
+            {"AE": {"eta_ae": "1.0", "sigma": "0.67"}},
+            {"DTI": {"eta_msa": "1.0", "sigma": "0.67"}},
+            {"AE+MTM": {"eta_lsa": "0.14", "eta_ae": "0.81", "sigma": "0.67"}},
+        ],
+        parameter_configs_nop={},
+    )
 
 
 if __name__ == "__main__":

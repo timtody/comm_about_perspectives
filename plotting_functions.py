@@ -34,7 +34,7 @@ def change_width_(ax, new_value, nclasses=2):
 def clean_latent_data(data, epoch=EPOCH):
     return data[
         (data["Epoch"] == epoch)
-        & (data["Metric"] == "Test accuracy")
+        & (data["Metric"] == "Accuracy")
         & (data["Type"] == "Latent")
         & (data["Agent"] != "baseline_1")
         & (data["Agent"] != "baseline_2")
@@ -287,7 +287,7 @@ def plot_perspective(
 
     data = pd.concat([data_perp, data_no_perp])
     data.sort_values(by="Agent", inplace=True)
-
+    print(data)
     sns.barplot(
         data=data,
         x="Perspective",
