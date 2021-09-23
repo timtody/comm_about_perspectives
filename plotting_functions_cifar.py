@@ -548,6 +548,10 @@ def plot_perspective_nagents_robustness():
     )
 
 
+def plot_external(ax):
+    pass
+
+
 if __name__ == "__main__":
     # plot_swap_and_agreement()
     plot_perspective_nagents_robustness()

@@ -20,16 +20,16 @@ from functions import create_timestap_path
 
 
 class MLP(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_size=256):
+    def __init__(self, input_dim, output_dim, hidden_size=512):
         super(MLP, self).__init__()
         self.fc_1 = nn.Linear(input_dim, hidden_size)
-        self.fc_2 = nn.Linear(hidden_size, hidden_size)
-        self.fc_3 = nn.Linear(hidden_size, output_dim)
+        self.fc_2 = nn.Linear(hidden_size, output_dim)
+        # self.fc_3 = nn.Linear(hidden_size, output_dim)
 
     def forward(self, x):
         x = f.elu(self.fc_1(x.flatten(start_dim=1)))
         x = f.elu(self.fc_2(x))
-        x = f.elu(self.fc_3(x))
+        # x = f.elu(self.fc_3(x))
         return x
 
 
