@@ -180,7 +180,7 @@ if __name__ == "__main__":
     hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "latent_dim", "samedigit"]
     noise_levels = [0.67]
     n_agents = [3]
-    latent_sizes = [4092, 8184]
+    latent_sizes = [8184]
     same_digit = [True, False]
     fixed_sweep = []
     for params in param_list:
