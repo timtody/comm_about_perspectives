@@ -191,6 +191,7 @@ if __name__ == "__main__":
                 new_params.append(("samedigit", sd))
                 fixed_sweep.append(new_params)
 
+    print(f"[SWEEPER]: Starting sweep with {len(fixed_sweep)} runs.")
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
     for vars in fixed_sweep:
         for var, value in vars:
