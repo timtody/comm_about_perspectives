@@ -72,7 +72,7 @@ class RunnerCfg(NamedTuple):
     gb: int = 32  # 16 or 32
     nnodes: int = 1
     ntasks: int = 1
-    time: str = "66:00:00"
+    time: str = "60:00:00"
     cpus_per_task: int = 2
     nrpocs: int = 3
     qos: str = "qos_gpu-t4"
