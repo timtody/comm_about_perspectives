@@ -385,8 +385,8 @@ def _plot_perspective_nagents_robustness(
     parameter_configs_nop: "list[dict]",
 ):
     prepare_plot()
-    fig_w, fig_h = get_size("neurips", fraction=0.95)
-    fig, ax = plt.subplots(constrained_layout=True, figsize=(fig_w * 0.5, fig_h))
+    fig_w, fig_h = get_size("neurips", fraction=0.95, height_multiplier=1)
+    fig, ax = plt.subplots(constrained_layout=True, figsize=(fig_w, fig_h))
 
     # ax2 = fig.add_subplot(gs[0, 1])
     # ax3 = fig.add_subplot(gs[1, 1])

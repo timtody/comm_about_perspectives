@@ -32,6 +32,8 @@ def get_size(width, fraction=0.97, subplots=(1, 1), height_multiplier=1):
         width_pt = 426.79135
     elif width == "beamer":
         width_pt = 307.28987
+    elif width == "AAMAS":
+        width_pt = 506.295
     else:
         width_pt = width
 

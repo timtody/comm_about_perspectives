@@ -312,7 +312,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_classes", type=int, default=10, choices=(10, 100))
     parser.add_argument("--no_gpu", action="store_false", dest="use_gpu")
     parser.add_argument("--weights_path", type=str, required=False)
-    parser.add_argument("--only_plot", action="store_true", dest="o nly_plot")
+    parser.add_argument("--only_plot", action="store_true", dest="only_plot")
     parser.add_argument("--ngpus", type=int, default=1)
     parser.add_argument("--exp_step", type=int, default=49999)
     parser.add_argument(

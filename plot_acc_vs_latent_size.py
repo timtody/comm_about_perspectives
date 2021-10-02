@@ -25,7 +25,7 @@ def add_run_column(df):
 
 def filter_unwanted_rows(df):
     df = df[
-        (df.Epoch == 49999)
+        (df.Epoch == 9999)
         & (df.Metric == "Test accuracy")
         & (df.Agent != "baseline_2")
         & (df.Agent != "baseline")
@@ -51,6 +51,7 @@ def main(args):
     )
     df = df[df.Run != "DTI-pure"]
     df = df[df.Run != "AE+MTM-pure"]
+
     df["Latent size"] = pd.to_numeric(df["latent_dim"])
     df[r"Validation accuracy (\%)"] = df["Value"]
     df["Perspective"] = df["samedigit"].map({"True": "With", "False": "Without"})
@@ -101,7 +102,7 @@ def main(args):
     ax2.set_ylim(ax1.get_ylim())
 
     fig.savefig(
-        f"plots/acc_vs_latent_size_{args.name}.pdf",
+        f"plots/prod/acc_vs_latent_size_{args.name}.pdf",
         format="pdf",
         bbox_inches="tight",
     )

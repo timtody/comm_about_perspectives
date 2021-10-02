@@ -72,10 +72,10 @@ class RunnerCfg(NamedTuple):
     gb: int = 16  # 16 or 32
     nnodes: int = 1
     ntasks: int = 1
-    time: str = "20:00:00"
+    time: str = "100:00:00"
     cpus_per_task: int = 2
     nrpocs: int = 3
-    qos: str = "qos_gpu-t3"
+    qos: str = "qos_gpu-t4"
 
 
 def generate_exp_path(exp, args, tracking_vars):
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "latent_dim", "samedigit"]
     noise_levels = [0.67]
     n_agents = [3]
-    latent_sizes = [8184]
+    latent_sizes = [256, 512, 1024, 2048, 4092, 8184]
     same_digit = [True, False]
     fixed_sweep = []
     for params in param_list:
