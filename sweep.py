@@ -69,7 +69,7 @@ class Config(NamedTuple):
 class RunnerCfg(NamedTuple):
     jobname: str = "job"
     gpu_or_cpu: str = "gpu"
-    gb: int = 16  # 16 or 32
+    gb: int = 32  # 16 or 32
     nnodes: int = 1
     ntasks: int = 1
     time: str = "100:00:00"
