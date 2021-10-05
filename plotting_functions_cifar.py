@@ -4,7 +4,8 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-from statannot import add_stat_annotation
+
+# from statannot import add_stat_annotation
 
 from reader.chunked_writer import TidyReader
 from plotting.plotting_helpers import get_size, set_tex_fonts, set_palette
