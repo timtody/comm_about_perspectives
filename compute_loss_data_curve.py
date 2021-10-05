@@ -103,7 +103,7 @@ def plot_curves(df, metric):
     plt.xscale("log")
     plt.ylabel(metric)
     plt.xlabel("Dataset size")
-    plt.savefig(f"reprieve_curves_{metric}.pdf")
+    plt.savefig(f"reprieve_curves_{metric}_cifar_big.pdf")
     plt.clf()
 
 
@@ -278,6 +278,10 @@ def main(args: argparse.Namespace):
         results = []
         for path in glob.glob(args.weights_path + "/*"):
             params = stem_to_params(path_to_stem(path))
+            if params["latent_dim"] != "512":
+                print("Wrong latent dim, continuing")
+                continue
+            print("Correct latent dim, gathering results")
             df = gather_results(
                 X,
                 y,
@@ -292,7 +296,7 @@ def main(args: argparse.Namespace):
             df["Run"] = map_params_to_name(params)
             results.append(df)
         df = pd.concat(results)
-        df.to_csv("loss_acc_data.csv")
+        df.to_csv("loss_acc_data_cifar_big.csv")
     else:
         df = pd.read_csv(args.owd + "/" + args.restore_from)
     df = df[df.Run != "AE+MTM-pure"]
