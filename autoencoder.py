@@ -3,7 +3,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from mnist import MNISTDataset
+
+# from mnist import MNISTDataset
 from abc import ABC
 
 

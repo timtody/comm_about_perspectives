@@ -8,7 +8,7 @@ import torch.optim as optim
 import torch.nn.functional as f
 import argparse
 from cifar import CifarDataset
-from autoencoder import _AutoEncoder
+from autoencoder import CifarAutoEncoder
 from functools import reduce
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -42,29 +42,29 @@ class LinearClassifier(nn.Module):
         return self.fc(x.flatten(start_dim=1))
 
 
-class CifarAutoEncoder(_AutoEncoder, nn.Module):
-    def __init__(self, lr=0.001, name=None):
-        super().__init__()
-        self._encoder = cifar_encoder()
-        self._decoder = cifar_decoder()
-        self.opt = optim.Adam(self.parameters(), lr=lr)
-        self.name = name
-
-
-def cifar_encoder():
-    return nn.Sequential(
-        nn.Conv2d(1, 16, 4),
-        nn.ELU(),
-        nn.Conv2d(16, 16, 4),
-    )
-
-
-def cifar_decoder():
-    return nn.Sequential(
-        nn.ConvTranspose2d(16, 16, 4),
-        nn.ELU(),
-        nn.ConvTranspose2d(16, 1, 4),
-    )
+# class CifarAutoEncoder(_AutoEncoder, nn.Module):
+#     def __init__(self, lr=0.001, name=None):
+#         super().__init__()
+#         self._encoder = cifar_encoder()
+#         self._decoder = cifar_decoder()
+#         self.opt = optim.Adam(self.parameters(), lr=lr)
+#         self.name = name
+#
+#
+# def cifar_encoder():
+#     return nn.Sequential(
+#         nn.Conv2d(1, 16, 4),
+#         nn.ELU(),
+#         nn.Conv2d(16, 16, 4),
+#     )
+#
+#
+# def cifar_decoder():
+#     return nn.Sequential(
+#         nn.ConvTranspose2d(16, 16, 4),
+#         nn.ELU(),
+#         nn.ConvTranspose2d(16, 1, 4),
+#     )
 
 
 def create_run_folder(func):
@@ -163,7 +163,7 @@ def load_encoder(path, rank, use_gpu, exp_step, agent="A"):
         if torch.cuda.is_available() and use_gpu
         else torch.device("cpu")
     )
-    cifar_ae = CifarAutoEncoder()
+    cifar_ae = CifarAutoEncoder(latent_dim=512)
     cifar_ae.load_state_dict(
         torch.load(
             os.path.join(path, "params", f"step_{exp_step}", f"rank_{rank}", f"{agent}.pt"),
