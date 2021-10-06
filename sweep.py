@@ -4,6 +4,7 @@ import time
 from argparse import ArgumentParser
 from typing import NamedTuple
 
+import numpy as np
 
 from experiments.shared_ref_mnist import Experiment
 from functions import (
@@ -44,7 +45,7 @@ class Config(NamedTuple):
     nsamples: int = 1
 
     # nets
-    latent_dim: int = 500
+    latent_dim: int = 512
     lr: float = 0.001
     bsize: int = 4096
 
@@ -138,58 +139,25 @@ if __name__ == "__main__":
 
     processes = []
 
-    # sweeper = Sweeper(
-    #     sample_vars=hparams[:-1],
-    #     grid_vars=hparams[-1:],
-    #     nsamples=args.nsamples,
-    #     gridsteps=args.gridsteps,
-    # )
     param_list = [
         [
-            ("eta_ae", 0.0),
             ("eta_lsa", 0.0),
-            ("eta_msa", 1.0),
-            ("eta_dsa", 0.0),
-        ],
-        [
-            ("eta_ae", 0.53),
-            ("eta_lsa", 0.01),
-            ("eta_msa", 0.74),
-            ("eta_dsa", 0.84),
-        ],
-        [
-            ("eta_ae", 0.81),
-            ("eta_lsa", 0.14),
-            ("eta_msa", 0.95),
-            ("eta_dsa", 0.01),
-        ],
-        [
-            ("eta_ae", 1.0),
-            ("eta_lsa", 0.1),
-            ("eta_msa", 0.0),
-            ("eta_dsa", 0.0),
-        ],
-        [
-            ("eta_ae", 1.0),
-            ("eta_lsa", 0.0),
-            ("eta_msa", 0.0),
             ("eta_dsa", 0.0),
         ],
     ]
 
-    hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa", "latent_dim", "samedigit"]
+    hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa"]
     noise_levels = [0.67]
     n_agents = [3]
-    latent_sizes = [512, 1024, 2048, 4092]
-    same_digit = [False]
+    latent_sizes = [512]
+    eta_aes = np.linspace(0, 1, 11)
     fixed_sweep = []
     for params in param_list:
-        for latent_size in latent_sizes:
-            for sd in same_digit:
-                new_params = copy(params)
-                new_params.append(("latent_dim", latent_size))
-                new_params.append(("samedigit", sd))
-                fixed_sweep.append(new_params)
+        for eta_ae in eta_aes:
+            new_params = copy(params)
+            new_params.append(("eta_ae", round(eta_ae, 1)))
+            new_params.append(("eta_msa", round(1 - eta_ae, 1)))
+            fixed_sweep.append(new_params)
 
     print(f"[SWEEPER]: Starting sweep with {len(fixed_sweep)} runs.")
     print("[SWEEPER]: Starting experiment at path:", sweep_root_path)
