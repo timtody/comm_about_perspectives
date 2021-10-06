@@ -141,9 +141,9 @@ if __name__ == "__main__":
 
     param_list = [
         [
-            # ("eta_lsa", 0.0),
+            ("eta_lsa", 0.0),
             ("eta_dsa", 0.0),
-            ("eta_msa", 0.0),
+            # ("eta_msa", 0.0),
         ],
     ]
 
@@ -157,7 +157,7 @@ if __name__ == "__main__":
         for eta_ae in eta_aes:
             new_params = copy(params)
             new_params.append(("eta_ae", round(eta_ae, 1)))
-            new_params.append(("eta_lsa", round(1 - eta_ae, 1)))
+            new_params.append(("eta_msa", round(1 - eta_ae, 1)))
             fixed_sweep.append(new_params)
 
     print(f"[SWEEPER]: Starting sweep with {len(fixed_sweep)} runs.")
