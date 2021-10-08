@@ -150,7 +150,7 @@ if __name__ == "__main__":
     hparams = ["eta_ae", "eta_lsa", "eta_msa", "eta_dsa"]
     noise_levels = [0.67]
     n_agents = [3]
-    latent_sizes = [512]
+    latent_sizes = [64]
     eta_aes = np.linspace(0, 1, 11)
     fixed_sweep = []
     for params in param_list:
